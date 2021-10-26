@@ -34,7 +34,7 @@ enum
 	PLI_PLAYERPROPS		= 2,
 	PLI_NPCPROPS		= 3,
 	PLI_BOMBADD			= 4,
-	PLI_BOMBDEL			= 5,
+	PLI_BOMBDEL			= 5,    // Interestingly, also seems to be associated with login packet on v6+
 	PLI_TOALL			= 6,
 	PLI_HORSEADD		= 7,
 	PLI_HORSEDEL		= 8,
@@ -153,7 +153,9 @@ enum
 	PLI_UPDATEPACKAGEREQUESTFILE				= 159,	// {159]{(char)order?]{packagefilename}{modtime}
 	PLI_RC_FOLDERDELETE			= 160,
 	PLI_UPDATECLASS				= 161,	// {161}{INT5 modtime}{name} Class request.
-	PLI_RC_UNKNOWN162			= 162	// Blank packet, sent by RC3 beta.
+	PLI_RC_UNKNOWN162			= 162,	// Blank packet, sent by RC3 beta.
+    PLI_SET_ENC_KEY             = 252,  // Set AES / RC4 encryption key and init vector
+    PLI_BUNDLE                  = 253   // Bundled packets contain multiple packets
 };
 
 enum
@@ -309,6 +311,8 @@ enum
 	// Also is related to PLI_UPDATESCRIPT as it sends the last modification time of the NPC/weapon.  The v5 client stores weapon scripts offline.
 	PLO_UNKNOWN197				= 197,	// Seems to register npcs on the client.  Also is used by client to see if it needs to get a newer version of the offline cache of the NPC.
 	PLO_UNKNOWN198				= 198,	// Valid message in 6.037. -Codr
+    PLO_SET_ENC_KEY             = 252,  // Set AES / RC4 encryption key and init vector
+    PLO_BUNDLE                  = 253   // Bundled packets contain multiple packets
 };
 
 enum

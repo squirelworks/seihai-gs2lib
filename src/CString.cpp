@@ -697,7 +697,8 @@ CString CString::base64encode() const
 
 CString CString::base64decode() const
 {
-	int in_len = length();
+    /* Check if last byte is null terminator */
+	int in_len = buffer[length() - 1] == 0 ? length() - 1 : length();
 
 	CString retVal = CString("");
 
