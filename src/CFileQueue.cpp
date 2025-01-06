@@ -100,11 +100,11 @@ bool CFileQueue::canSend()
 	return false;
 }
 
-void CFileQueue::sendCompress()
+void CFileQueue::sendCompress(bool forceSendFiles)
 {
 	CString pSend;
 
-	if (sock == 0 || sock->getState() == SOCKET_STATE_DISCONNECTED)
+	if (sock == nullptr || sock->getState() == SOCKET_STATE_DISCONNECTED)
 		return;
 
 	// If the next normal packet is huge, lets "try" to send it.
@@ -116,7 +116,7 @@ void CFileQueue::sendCompress()
 	}
 
 	// If we haven't sent a file in a while, forcibly send one now.
-	if (pSend.length() == 0 && bytesSentWithoutFile > 0x7FFF && !fileBuffer.empty())	// 32KB
+	if (pSend.length() == 0 && (bytesSentWithoutFile > 0x7FFF || forceSendFiles || sendCallsWithoutData >= 4) && !fileBuffer.empty())	// 32KB
 	{
 		bytesSentWithoutFile = 0;
 		pSend << fileBuffer.front();
@@ -150,8 +150,14 @@ void CFileQueue::sendCompress()
 	if (fileBuffer.empty()) bytesSentWithoutFile = 0;
 
 	// If we have no data, just return.
-	if (pSend.length() == 0)
+	if (pSend.length() == 0) {
+		if (sendCallsWithoutData < 5) {
+			sendCallsWithoutData++;
+		}
+
 		return;
+	}
+	sendCallsWithoutData = 0;
 
 	// compress buffer
 	switch (out_codec.getGen())
