@@ -149,12 +149,14 @@ class CSocketManager
 struct sock_properties
 {
 	sock_properties() : handle(INVALID_SOCKET), protocol(SOCKET_PROTOCOL_TCP),
-		type(SOCKET_TYPE_CLIENT), state(SOCKET_STATE_DISCONNECTED) {}
+		type(SOCKET_TYPE_CLIENT), state(SOCKET_STATE_DISCONNECTED), reuse(true) {}
 
 	SOCKET handle;
 	int protocol;
 	int type;
 	int state;
+    /* If we should use SO_REUSEADDR */
+    bool reuse;
 	char description[SOCKET_MAX_DESCRIPTION];
 	sockaddr_storage address;
 	size_t addresslen;

@@ -371,9 +371,15 @@ int CSocket::connect()
 	// Bind the socket if it is a server-type socket.
 	if (properties.type == SOCKET_TYPE_SERVER)
 	{
-		// Let us reuse the address.  Freaking bind.
-		int value = 1;
-		setsockopt(properties.handle, SOL_SOCKET, SO_REUSEADDR, (char*)&value, sizeof(value));
+
+        /* If we should use the reuse property. Default: yes */
+        if (properties.reuse)
+        {
+		    // Let us reuse the address.
+		    int value = 1;
+		    setsockopt(properties.handle, SOL_SOCKET, SO_REUSEADDR, (char*)&value, sizeof(value));
+        }
+
 
 		// Bind the socket.
 		if (::bind(properties.handle, (struct sockaddr *)&properties.address, properties.addresslen) == SOCKET_ERROR)
