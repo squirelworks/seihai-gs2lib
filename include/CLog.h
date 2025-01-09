@@ -22,11 +22,14 @@
 #ifndef CLOG_H
 #define CLOG_H
 
-#include <stdarg.h>
-#include <stdio.h>
+#include <cstdarg>
+#include <cstdio>
 #include <mutex>
 #include <condition_variable>
 #include "CString.h"
+
+// Typedef for the callback function pointer
+typedef void (*StringPrintCallback)(const char*);
 
 //! Logger class for logging information to a file.
 class CLog
@@ -70,6 +73,22 @@ class CLog
 		*/
 		void setEnabled(bool enabled);
 
+		//! Sets the enabled state of timestamps for cli in the logger class.
+		/*!
+			Sets the enabled state of timestamps for cli in the logger class.
+			If /a enabled is set to false, it will no longer log timestamps to cli.
+			\param enabled If true, show timestamps in cli.  If false, don't show timestamps in cli.
+		*/
+		void setTimeStampsInCliEnabled(bool enabled);
+
+		//! Sets the enabled state of logs for cli in the logger class.
+		/*!
+			Sets the enabled state of logs for cli in the logger class.
+			If /a enabled is set to false, it will no longer log to cli.
+			\param enabled If true, show logs in cli.  If false, don't show logs in cli.
+		*/
+		void setLogToCliEnabled(bool enabled);
+
 		//! Gets the name of the log file.
 		//! \return Name of the log file.
 		const CString& getFilename() const;
@@ -78,9 +97,14 @@ class CLog
 		//! \param filename Name of the file to write to.
 		void setFilename(const CString& filename);
 
+		static StringPrintCallback external_log_function;
+
 	private:
 		//! If the class is enabled or not.
 		bool enabled;
+
+		bool timeStampsInCliEnabled = true;
+		bool logToCliEnabled = true;
 
 		//! Filename to write to.
 		CString filename;
@@ -92,9 +116,7 @@ class CLog
 		FILE* file;
 
 		//! Mutex
-#ifndef __AMIGA__
 		std::recursive_mutex* m_write;
-#endif
 };
 
 inline
@@ -113,6 +135,18 @@ inline
 void CLog::setEnabled(bool enabled)
 {
 	this->enabled = enabled;
+}
+
+inline
+void CLog::setTimeStampsInCliEnabled(bool enabled)
+{
+	this->timeStampsInCliEnabled = enabled;
+}
+
+inline
+void CLog::setLogToCliEnabled(bool enabled)
+{
+	this->logToCliEnabled = enabled;
 }
 
 #endif

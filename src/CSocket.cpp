@@ -29,7 +29,6 @@
 #endif
 
 	// Some of these might not be valid in Linux, but I don't really care right now.
-	//#define WSANOTINITIALISED	WSANOTINITIALISED
 	#define ENETDOWN			WSAENETDOWN
 	#define EADDRINUSE			WSAEADDRINUSE
 	#define EINTR				WSAEINTR
@@ -100,7 +99,7 @@ bool CSocketManager::update(long sec, long usec)
 {
 	fd_set set_read;
 	fd_set set_write;
-	struct timeval tm;
+	struct timeval tm{};
 
 	tm.tv_sec = sec;
 	tm.tv_usec = usec;
@@ -109,10 +108,10 @@ bool CSocketManager::update(long sec, long usec)
 
 	// Put all the socket handles into the set.
 	SOCKET max = 0;
-	for (std::vector<CSocketStub*>::iterator i = stubList.begin(); i != stubList.end();)
+	for (auto i = stubList.begin(); i != stubList.end();)
 	{
 		CSocketStub* stub = *i;
-		if (stub == 0)
+		if (stub == nullptr)
 		{
 			i = stubList.erase(i);
 			continue;
@@ -132,10 +131,10 @@ bool CSocketManager::update(long sec, long usec)
 	select(fd_max + 1, &set_read, &set_write, 0, &tm);
 
 	// Loop through all the socket handles and call relevant functions.
-	for (std::vector<CSocketStub*>::iterator i = stubList.begin(); i != stubList.end();)
+	for (auto i = stubList.begin(); i != stubList.end();)
 	{
 		CSocketStub* stub = *i;
-		if (stub == 0) continue;
+		if (stub == nullptr) continue;
 
 		SOCKET sock = stub->getSocketHandle();
 		if (sock != INVALID_SOCKET)
@@ -146,7 +145,7 @@ bool CSocketManager::update(long sec, long usec)
 			if (!success)
 			{
 				stub->onUnregister();
-				*i = 0;
+				*i = nullptr;
 			}
 		}
 		++i;
@@ -163,7 +162,7 @@ bool CSocketManager::updateSingle(CSocketStub* stub, bool pRead, bool pWrite, lo
 {
 	fd_set set_read;
 	fd_set set_write;
-	struct timeval tm;
+	struct timeval tm{};
 
 	if (stub == 0) return false;
 
@@ -184,7 +183,7 @@ bool CSocketManager::updateSingle(CSocketStub* stub, bool pRead, bool pWrite, lo
 	// Call relevant functions.
 	if (FD_ISSET(sock, &set_read))
 	{
-		if (stub->onRecv() == false)
+		if (!stub->onRecv())
 		{
 			stub->onUnregister();
 			vecReplace<CSocketStub*>(stubList, stub, 0);	// Will remove during next call to update().
@@ -193,7 +192,7 @@ bool CSocketManager::updateSingle(CSocketStub* stub, bool pRead, bool pWrite, lo
 	}
 	if (FD_ISSET(sock, &set_write))
 	{
-		if (stub->onSend() == false)
+		if (!stub->onSend())
 		{
 			stub->onUnregister();
 			vecReplace<CSocketStub*>(stubList, stub, 0);
@@ -221,16 +220,16 @@ bool CSocketManager::unregisterSocket(CSocketStub* stub)
 	SOCKET sock = stub->getSocketHandle();
 
 	bool found = false;
-	for (std::vector<CSocketStub*>::iterator i = stubList.begin(); i != stubList.end(); ++i)
+	for (auto & i : stubList)
 	{
-		CSocketStub* stub = *i;
-		if (stub == 0) continue;
+		CSocketStub* stub = i;
+		if (stub == nullptr) continue;
 
 		SOCKET sock2 = stub->getSocketHandle();
 		if (sock2 == sock)
 		{
 			stub->onUnregister();
-			*i = 0;
+			i = nullptr;
 			found = true;
 			break;
 		}
@@ -241,10 +240,9 @@ bool CSocketManager::unregisterSocket(CSocketStub* stub)
 
 void CSocketManager::cleanup(bool callOnUnregister)
 {
-	for (std::vector<CSocketStub*>::iterator i = stubList.begin(); i != stubList.end(); ++i)
+	for (auto stub : stubList)
 	{
-		CSocketStub* stub = *i;
-		if (stub == 0) continue;
+			if (stub == nullptr) continue;
 
 		if (callOnUnregister)
 			stub->onUnregister();

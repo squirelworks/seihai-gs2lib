@@ -28,14 +28,26 @@
 
 struct CKey
 {
-	CKey(const CString& pName, const CString& pValue)
+	CKey(const CString& pName, const CString& pRawValue)
 	{
 		name  = pName;
-		value = pValue;
+		rawvalue = pRawValue;
+
+		int comment_pos = rawvalue.find("#");
+		if (comment_pos == -1) {
+			value = rawvalue;
+			rawvalue.clear();
+		}
+		else {
+			value = rawvalue.remove(comment_pos);
+			value.trimI();
+			rawvalue.removeI(0, value.length());
+		}
 	}
 
 	CString name;
 	CString value;
+	CString rawvalue;
 	bool saved = false;
 };
 
@@ -76,9 +88,7 @@ class CSettings
 		CString filename;
 		std::vector<CKey *> keys;
 		std::vector<CString> strList;
-#ifndef __AMIGA__
 		mutable std::recursive_mutex* m_preventChange;
-#endif
 };
 
 #endif // CSETTINGS_H

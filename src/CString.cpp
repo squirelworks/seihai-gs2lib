@@ -62,7 +62,7 @@
 	Constructor ~ Deconstructor
 */
 CString::CString(const char *pString)
-	: _heapBuffer(0), buffer(_internalBuffer), buffc(30), sizec(0), readc(0), writec(0)
+	: _heapBuffer(nullptr), buffer(_internalBuffer), buffc(30), sizec(0), readc(0), writec(0)
 {
 	if (pString != 0)
 	{
@@ -79,15 +79,27 @@ CString::CString(const char *pString)
 }
 
 CString::CString(const std::string& pString)
-	: _heapBuffer(nullptr), buffer(_internalBuffer), buffc(30), sizec(0), readc(0), writec(0) 
+	: _heapBuffer(nullptr), buffer(_internalBuffer), buffc(30), sizec(0), readc(0), writec(0)
 {
-	write(pString.c_str(), pString.length());
+	if (pString.length())
+	{
+		write(pString.c_str(), pString.length());
+		return;
+	}
+
+	_internalBuffer[0] = 0;
 }
 
 CString::CString(const CString& pString)
 	: _heapBuffer(nullptr), buffer(_internalBuffer), buffc(30), sizec(0), readc(0), writec(0)
 {
-	write(pString.text(), pString.length());
+	if (pString.length())
+	{
+		write(pString.text(), pString.length());
+		return;
+	}
+
+	_internalBuffer[0] = 0;
 }
 
 CString::CString(double val)
@@ -392,7 +404,7 @@ CString CString::unescape() const
 {
 	CString retVal;
 
-	for (auto i = 0; i < length() - 1; i++)
+	for (auto i = 0; i < length(); i++)
 	{
 		char cur = buffer[i];
 		char nex = buffer[++i];
@@ -646,6 +658,45 @@ CString CString::decodesimple(unsigned int buffSize, bool includeNullTermination
 	retVal.write(buf, clen);
 	delete [] buf;
 	return retVal;
+}
+
+CString CString::codesimplefix0(unsigned int buffSize) const
+{
+	CString retVal;
+	char* buf = new char[buffSize];
+	//memset((void*)buf, 0, buffSize);
+	memcpy(buf, buffer, buffSize);
+	int error = 0;
+	unsigned int clen = buffSize;
+
+
+
+	char key;
+	int i = 0;
+
+	while( true ) {
+		key = (-0x0a - clen) + ~buf[i];
+		if (((int)(key & 0xfc) >> 2) + (key * (char)'@' & 0xff) == i) {
+			buf[i] = '\0';
+		}
+		if (i + 1 == clen) break;
+		i++;
+	}
+
+	retVal.write(buf, clen);
+	delete [] buf;
+	return retVal;
+}
+
+const char CString::BASE64[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+
+std::string CString::formatBase64(std::size_t num, std::size_t len) {
+	std::string str;
+	for ( std::size_t i = 0; i < len; ++i ) {
+		int index = (num >> (len - i - 1) * 6) & 0x3F; // 6 bit per character
+		str += BASE64[index];
+	}
+	return str;
 }
 
 CString CString::base64encode() const
@@ -1426,6 +1477,22 @@ CString& CString::writeInt(const int pData, bool nullTerminate)
 	return *this;
 }
 
+
+CString& CString::writeInt3(const int pData, bool nullTerminate)
+{
+	unsigned int t = pData;
+
+	unsigned char val[3];
+
+	val[0] = t >> 0x10;
+	val[1] = t >> 0x8;
+	val[2] = t;
+
+	write((char *)&val,3, nullTerminate);
+
+	return *this;
+}
+
 char CString::readChar()
 {
 	char val;
@@ -1590,7 +1657,31 @@ CString getExtension(const CString& pStr)
 	int pos = pStr.findl('.');
 	if (pos >= 0)
 		return pStr.subString(pos);
-	return CString();
+	return {};
+}
+
+CString getPath(const CString& pStr, char separator)
+{
+	int pos = pStr.findl(separator);
+	if (pos >= 0)
+		return pStr.subString(0,pos+1);
+	return {};
+}
+
+
+CString getFilename(const CString& pStr, char separator)
+{
+	int pos = pStr.findl(separator);
+	if (pos >= 0)
+		return pStr.subString(pos+1);
+	return pStr;
+}
+
+uint32_t calculateCrc32Checksum(const CString& pStr)
+{
+	uint32_t checksum = crc32(0L, Z_NULL, 0);
+	checksum = crc32(checksum, (const uint8_t *)pStr.text(), pStr.length());
+	return checksum;
 }
 
 #if defined(WOLFSSL_ENABLED)
@@ -1616,6 +1707,12 @@ CString& CString::rc4_decryptI(const char * key, int keylen)
 CString& CString::encodesimpleI(unsigned int buffSize)
 {
 	*this = encodesimple(buffSize);
+	return *this;
+}
+
+CString& CString::codesimplefix0I(unsigned int buffSize)
+{
+	*this = codesimplefix0(buffSize);
 	return *this;
 }
 

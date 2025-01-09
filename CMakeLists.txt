@@ -98,8 +98,8 @@ elseif(WIN32)
 		set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /MTd")
 		set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /MT")
 		set(
-			CMAKE_CXX_FLAGS_RELWITHDEBINFO
-			"${CMAKE_CXX_FLAGS_RELWITHDEBINFO} /MTd"
+				CMAKE_CXX_FLAGS_RELWITHDEBINFO
+				"${CMAKE_CXX_FLAGS_RELWITHDEBINFO} /MTd"
 		)
 		set(CMAKE_CXX_FLAGS_MINSIZEREL "${CMAKE_CXX_FLAGS_MINSIZEREL} /MT")
 		cmake_policy(SET CMP0043 NEW)
@@ -115,16 +115,9 @@ elseif(WIN32)
 	# Prevent Windows.h from clashing with the Standard Template Library so we
 	# can use std::min/std::max (see https://support.microsoft.com/kb/143208)
 	add_definitions(-DNOMINMAX)
-
-elseif(AROS)
-elseif(AMIGA)
-
-	add_definitions(-D_DEFAULT_SOURCE -D_POSIX_C_SOURCE=1)
-	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu99")
-	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++17")
 else()
 	if(STATIC)
-	#	SET(CMAKE_EXE_LINKER_FLAGS "-static")
+		#	SET(CMAKE_EXE_LINKER_FLAGS "-static")
 	endif()
 
 	add_definitions(-D_DEFAULT_SOURCE -D_POSIX_C_SOURCE=1)
@@ -133,12 +126,15 @@ else()
 
 endif()
 
+set(CMAKE_MESSAGE_INDENT "")
+message(STATUS "Configuring ${PROJECT_NAME} v${VER_FULL}")
+list(APPEND CMAKE_MESSAGE_INDENT "* ")
+
 option(STATIC "Compile as a static runtime." ON)
+message(STATUS "Compile as static runtime:\t\t\t\t\t${STATIC}")
 if(NOT STATIC)
-	message("Don't compile as a static runtime.")
 	set(BUILD_SHARED_LIBS TRUE CACHE BOOL "-" FORCE)
 else()
-	message("Compile as static runtime.")
 	add_definitions(-DSTATICLIB)
 	set(BUILD_SHARED_LIBS FALSE CACHE BOOL "-" FORCE)
 endif()
@@ -151,7 +147,7 @@ endif()
 
 find_package(ZLIB)
 if(NOT ZLIB_FOUND)
-	message("Zlib not found in system. Compiling it ourselves.")
+	message(STATUS "Zlib not found in system. Compiling it ourselves.")
 	add_subdirectory(${PROJECT_SOURCE_DIR}/dependencies/zlib EXCLUDE_FROM_ALL)
 	if(STATIC)
 		set_target_properties(zlibstatic minigzip example PROPERTIES EXCLUDE_FROM_ALL 1 EXCLUDE_FROM_DEFAULT_BUILD 1)
@@ -162,7 +158,7 @@ endif()
 
 find_package(BZip2)
 if(NOT BZip2_FOUND)
-	message("Bzip2 not found in system. Compiling it ourselves.")
+	message(STATUS "Bzip2 not found in system. Compiling it ourselves.")
 	add_subdirectory(${PROJECT_SOURCE_DIR}/dependencies/bzip2 EXCLUDE_FROM_ALL)
 endif()
 
@@ -172,32 +168,33 @@ if(STATIC)
 endif()
 
 set(
-	SOURCES
-	src/CCommon.cpp
-	src/CLog.cpp
-	src/CSettings.cpp
-	src/CString.cpp
-	src/CTranslationManager.cpp
-	src/IUtil.cpp
-	src/md5.cpp
+		SOURCES
+		src/CCommon.cpp
+		src/CLog.cpp
+		src/CSettings.cpp
+		src/CString.cpp
+		src/CTranslationManager.cpp
+		src/IUtil.cpp
+		src/md5.cpp
 )
 
 set(
-	HEADERS
-	include/CCommon.h
+		HEADERS
+		include/CCommon.h
 
-	include/CLog.h
-	include/CSettings.h
-	include/CString.h
-	include/CTimeout.h
-	include/CTranslationManager.h
-	include/IDebug.h
-	include/IEnums.h
-	include/IUtil.h
-	include/md5.h
+		include/CLog.h
+		include/CSettings.h
+		include/CString.h
+		include/CTimeout.h
+		include/CTranslationManager.h
+		include/IDebug.h
+		include/IEnums.h
+		include/IUtil.h
+		include/md5.h
 )
 
 option(NET "Compile with networking support." ON)
+message(STATUS "Compile with networking support:\t\t\t${NET}")
 if(NET)
 	list(APPEND
 			SOURCES
@@ -211,11 +208,11 @@ if(NET)
 			include/CEncryption.h
 			include/CFileQueue.h
 			include/CSocket.h
-			)
+	)
 endif()
 
 include_directories(
-	${PROJECT_SOURCE_DIR}/include
+		${PROJECT_SOURCE_DIR}/include
 )
 
 set(GS2LIB_INCLUDE_DIRECTORY
@@ -239,47 +236,68 @@ set(TARGET_NAME ${PROJECT_NAME})
 add_library(${TARGET_NAME} ${SOURCES} ${HEADERS})
 
 option(WOLFSSL "Compile with WolfSSL support." OFF)
-if(NOT WOLFSSL)
-	message("Don't compile WolfSSL.")
-else()
-	message("Compile as WolfSSL.")
+message(STATUS "Compile with WolfSSL support:\t\t\t\t${WOLFSSL}")
+if(WOLFSSL)
 	set(WOLFSSL_OPENSSH yes CACHE BOOL "yes" FORCE)
 	set(WOLFSSL_ARC4 yes CACHE BOOL "yes" FORCE)
-	set(WOLFSSL_RSA yes)
-	set(WOLFSSL_DES3 yes)
-	set(WOLFSSL_HARDEN yes)
-
-	set(WOLFSSL_CRYPT_TESTS no)
-	set(WOLFSSL_EXAMPLES no)
+	set(WOLFSSL_RSA yes CACHE BOOL "yes" FORCE)
+	set(WOLFSSL_AES yes CACHE BOOL "yes" FORCE)
+	set(WOLFSSL_DSA yes CACHE BOOL "yes" FORCE)
+	set(WOLFSSL_SHA yes CACHE BOOL "yes" FORCE)
+	set(WOLFSSL_TLSV12 no CACHE BOOL "no" FORCE)
+	set(WOLFSSL_SHA512 yes CACHE BOOL "yes" FORCE)
+	set(WOLFSSL_DES3 yes CACHE BOOL "yes" FORCE)
+	set(WOLFSSL_HARDEN yes CACHE BOOL "yes" FORCE)
+	set(WOLFSSL_SP_MATH_ALL yes CACHE BOOL "yes" FORCE)
+	set(WOLFSSL_CRYPT_TESTS no CACHE BOOL "no" FORCE)
+	set(WOLFSSL_EXAMPLES no CACHE BOOL "no" FORCE)
+	set(WOLFSSL_OPENSSLALL no CACHE BOOL "no" FORCE)
+	set(WOLFSSL_OPENSSLEXTRA no CACHE BOOL "no" FORCE)
+	set(WOLFSSL_DEBUG yes CACHE BOOL "yes" FORCE)
 	target_compile_definitions(${PROJECT_NAME} PUBLIC WOLFSSL_ENABLED)
+	set(CMAKE_MESSAGE_INDENT "-- * -- ")
+	string(APPEND CMAKE_C_FLAGS " -DWOLFSSL_LIBWEBSOCKETS -DHAVE_EX_DATA -DHAVE_ALPN")
+
 	add_subdirectory("dependencies/wolfssl" EXCLUDE_FROM_ALL)
 	add_dependencies(${PROJECT_NAME} wolfssl)
-	target_link_libraries(${PROJECT_NAME} wolfssl)
-	target_compile_definitions(wolfssl PUBLIC WOLFSSL_ALLOW_RC4)
+	target_link_libraries(${PROJECT_NAME} PRIVATE wolfssl)
+	target_compile_definitions(wolfssl PUBLIC WOLFSSL_ALLOW_RC4 WOLFSSL_UINT128_T_DEFINED WOLFSSL_SP_MATH_ALL)
+	if(MINGW)
+		target_compile_definitions(wolfssl PUBLIC sp_int_word=sp_uint128 sp_int_sword=sp_int128)
+	endif()
 endif()
+set(CMAKE_MESSAGE_INDENT "")
 
 if(NOT ZLIB_FOUND AND STATIC)
 	add_dependencies(${TARGET_NAME} zlibstatic)
-	target_link_libraries(${TARGET_NAME} zlibstatic)
+	target_link_libraries(${TARGET_NAME} PRIVATE zlibstatic)
 elseif(NOT ZLIB_FOUND AND NOT STATIC)
 	add_dependencies(${TARGET_NAME} zlib)
-	target_link_libraries(${TARGET_NAME} zlib)
+	target_link_libraries(${TARGET_NAME} PRIVATE zlib)
 else()
-	target_link_libraries(${TARGET_NAME} ${ZLIB_LIBRARIES})
+	target_link_libraries(${TARGET_NAME} PRIVATE ${ZLIB_LIBRARIES})
 endif()
 
 if(NOT BZip2_FOUND)
 	add_dependencies(${TARGET_NAME} bzip2)
-	target_link_libraries(${TARGET_NAME} bzip2)
+	target_link_libraries(${TARGET_NAME} PRIVATE bzip2)
 else()
-	target_link_libraries(${TARGET_NAME} ${BZIP2_LIBRARIES})
+	target_link_libraries(${TARGET_NAME} PRIVATE ${BZIP2_LIBRARIES})
 endif()
 
-target_link_libraries(${TARGET_NAME} ${CMAKE_THREAD_LIBS_INIT})
+target_link_libraries(${TARGET_NAME} PRIVATE ${CMAKE_THREAD_LIBS_INIT})
 
 if(WIN32)
-	target_link_libraries(${TARGET_NAME} ws2_32 wsock32 iphlpapi)
+	target_link_libraries(${TARGET_NAME} PRIVATE ws2_32 wsock32 iphlpapi)
 endif()
+
+# Seems to be fixed in later versions of mingw
+#if(MINGW)
+#	option(MINGW_STDTHREADS_GENERATE_STDHEADERS "" ON)
+#	add_subdirectory(dependencies/mingw_stdthreads)
+#	target_link_libraries(${TARGET_NAME} mingw_stdthreads)
+#	target_compile_definitions(mingw_stdthreads INTERFACE MINGW_STDTHREAD_REDUNDANCY_WARNING)
+#endif()
 
 # Packaging
 if(APPLE)
@@ -295,8 +313,6 @@ if(APPLE)
 	)
 elseif(WIN32)
 	set(CPACK_GENERATOR "ZIP")
-elseif(AMIGA)
-	set(CPACK_GENERATOR LHA)
 else()
 	set(CPACK_GENERATOR TGZ)
 endif()

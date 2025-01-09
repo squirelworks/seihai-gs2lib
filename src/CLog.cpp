@@ -41,12 +41,14 @@
 
 static CString getBasePath();
 
+StringPrintCallback CLog::external_log_function = nullptr;
+
 CLog::CLog()
 : enabled(false), file(nullptr)
 {
-#ifndef __AMIGA__
+
 	m_write = new std::recursive_mutex();
-#endif
+
 	// Get base path.
 	homepath = getBasePath();
 }
@@ -54,9 +56,8 @@ CLog::CLog()
 CLog::CLog(const CString& _file, bool _enabled)
 : enabled(_enabled), filename(_file), file(0)
 {
-#ifndef __AMIGA__
 	m_write = new std::recursive_mutex();
-#endif
+
 	// Get base path.
 	homepath = getBasePath();
 
@@ -70,32 +71,31 @@ CLog::CLog(const CString& _file, bool _enabled)
 CLog::~CLog()
 {
 	{
-#ifndef __AMIGA__
 		std::lock_guard<std::recursive_mutex> lock(*m_write);
-#endif
+
 		if (file)
 		{
 			fflush(file);
 			fclose(file);
 		}
 	}
-#ifndef __AMIGA__
+
 	delete m_write;
-#endif
 }
 
 void CLog::out(const CString format, ...)
 {
 	va_list s_format_v;
 
-#ifndef __AMIGA__
 	std::lock_guard<std::recursive_mutex> lock(*m_write);
-#endif
+
 	// Assemble and print the timestamp.
 	char timestr[60];
 	time_t current_time = time(0);
 	strftime(timestr, sizeof(timestr), "%I:%M %p", localtime(&current_time));
-	printf("[%s] ", timestr);
+
+	if (this->timeStampsInCliEnabled)
+		printf("[%s] ", timestr);
 
 	// Log output to file.
 	if ( enabled && nullptr != file)
@@ -112,40 +112,54 @@ void CLog::out(const CString format, ...)
 	}
 
 	// Display message.
-	va_start(s_format_v, format);
-	vprintf(format.text(), s_format_v);
-	va_end(s_format_v);
+	if (this->logToCliEnabled) {
+		va_start(s_format_v, format);
+		if (!external_log_function) {
+			vprintf(format.text(), s_format_v);
+		} else {
+			char tmpBuf[1024];
+			vsprintf(tmpBuf,format.text(), s_format_v);
+			external_log_function(tmpBuf);
+		}
+		va_end(s_format_v);
+	}
 }
 
 void CLog::append(const CString format, ...)
 {
 	va_list s_format_v;
-	va_start(s_format_v, format);
 
-#ifndef __AMIGA__
+
 	std::lock_guard<std::recursive_mutex> lock(*m_write);
-#endif
+
 	// Log output to file.
-	if ( enabled && nullptr != file)
+	if (enabled && nullptr != file)
 	{
 		// Write the message to the file.
-		vfprintf(file, format.text(), s_format_v);
-		fflush(file);
-		va_end(s_format_v);
 		va_start(s_format_v, format);
+		vfprintf(file, format.text(), s_format_v);
+		va_end(s_format_v);
+		fflush(file);
 	}
 
 	// Display message.
-	vprintf(format.text(), s_format_v);
-
-	va_end(s_format_v);
+	if (this->logToCliEnabled) {
+		va_start(s_format_v, format);
+		if (!external_log_function) {
+			vprintf(format.text(), s_format_v);
+		} else {
+			char tmpBuf[1024];
+			vsprintf(tmpBuf,format.text(), s_format_v);
+			external_log_function(tmpBuf);
+		}
+		va_end(s_format_v);
+	}
 }
 
 void CLog::clear()
 {
-#ifndef __AMIGA__
 	std::lock_guard<std::recursive_mutex> lock(*m_write);
-#endif
+
 	if (file) fclose(file);
 
 	file = fopen((homepath + filename).text(), "w");
@@ -154,9 +168,8 @@ void CLog::clear()
 
 void CLog::close()
 {
-#ifndef __AMIGA__
 	std::lock_guard<std::recursive_mutex> lock(*m_write);
-#endif
+
 	if (file) fclose(file);
 	file = nullptr;
 	enabled = false;
@@ -166,9 +179,8 @@ void CLog::close()
 
 void CLog::open()
 {
-#ifndef __AMIGA__
 	std::lock_guard<std::recursive_mutex> lock(*m_write);
-#endif
+
 	if (file) fclose(file);
 
 	file = fopen((homepath + filename).text(), "a");
@@ -177,9 +189,8 @@ void CLog::open()
 
 void CLog::setFilename(const CString& filename)
 {
-#ifndef __AMIGA__
 	std::lock_guard<std::recursive_mutex> lock(*m_write);
-#endif
+
 	if (file) fclose(file);
 
 	this->filename = filename;
@@ -207,11 +218,7 @@ CString getBasePath()
 	// Get the path to the program.
 	char path[ 260 ];
 	memset((void*)path, 0, 260);
-#ifdef __AMIGA__
-	snprintf(path, sizeof(path), "PROGDIR:");
-#else
 	readlink("/proc/self/exe", path, sizeof(path));
-#endif
 
 	// Assign the path to homepath.
 	char* end = strrchr(path, '/');

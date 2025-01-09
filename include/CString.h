@@ -33,6 +33,7 @@ c:\mingw\bin\../lib/gcc/mingw32/4.6.2/include/c++/cstdio:166:11: erreur: '::snpr
 #define _WINSOCKAPI_
 #include <cstdlib>
 #include <cstdio>
+#include <cstdint>
 #include <cstring>
 #include <string>
 #include <vector>
@@ -126,7 +127,9 @@ class CString
 		CString rc4_decrypt(const char * key, int keylen) const;
 #endif
 		CString decodesimple(unsigned int buffSize = 65536, bool includeNullTermination = false) const;
+		CString codesimplefix0(unsigned int buffSize = 65536) const;
 		CString encodesimple(unsigned int buffSize = 65536) const;
+		static std::string formatBase64(std::size_t num, std::size_t len = 2);
 		CString base64encode() const;
 		CString base64decode() const;
 		CString bzcompress(unsigned int buffSize = 65536) const;
@@ -167,6 +170,7 @@ class CString
 		CString& rc4_decryptI(const char * key, int keylen);
 #endif
 		CString& encodesimpleI(unsigned int buffSize = 65536);
+		CString& codesimplefix0I(unsigned int buffSize = 65536);
 		CString& decodesimpleI(unsigned int buffSize = 65536, bool includeNullTermination = false);
 		CString& base64encodeI();
 		CString& base64decodeI();
@@ -182,7 +186,7 @@ class CString
 		/* Operators */
 		const char& operator[](const int& pIndex) const;
 		char& operator[](const int& pIndex);
-		
+
 		CString& operator=(const CString& pString);
 		CString& operator<<(const CString& pString);
 		CString& operator+=(const CString& pString);
@@ -209,6 +213,7 @@ class CString
 		CString& writeChar(const char pData, bool nullTerminate = true);
 		CString& writeShort(const short pData, bool nullTerminate = true);
 		CString& writeInt(const int pData, bool nullTerminate = true);
+		CString& writeInt3(const int pData, bool nullTerminate = true);
 		char readChar();
 		short readShort();
 		int readInt();
@@ -236,6 +241,8 @@ class CString
 		int buffc, sizec, readc, writec;
 		char * _heapBuffer;
 		char _internalBuffer[INTERNAL_BUFFER_SIZE];
+	private:
+		static const char BASE64[];
 };
 
 /*
@@ -275,7 +282,7 @@ inline CString& CString::operator=(CString&& o) noexcept
 	readc = o.readc;
 	writec = o.writec;
 	o.clear(30);
-	
+
 	return *this;
 }
 
@@ -486,5 +493,20 @@ inline CString& CString::guntokenizeI()
 	Friend Functions
 */
 CString getExtension(const CString& pStr);
+CString getPath(const CString& pStr, char separator =
+#ifdef WIN32
+'\\'
+#else
+'/'
+#endif
+);
+CString getFilename(const CString& pStr, char separator =
+#ifdef WIN32
+'\\'
+#else
+'/'
+#endif
+);
+uint32_t calculateCrc32Checksum(const CString& pStr);
 
 #endif // CSTRING_H

@@ -1,33 +1,15 @@
 {
   "builds": [
 	{
-	  "DockerImage":	"desertbit/crossbuild:linux-x86",
+	  "DockerImage":	"amigadev/crosstools:x86_64-linux",
 	  "Generator":		"Unix Makefiles",
-	  "OS":				"Linux x86",
+	  "OS":			"Linux x86_64",
 	  "Defines":		""
 	},
 	{
-	  "DockerImage":	"desertbit/crossbuild:linux-x86_64",
+	  "DockerImage":	"amigadev/crosstools:x86_64-w64-mingw32",
 	  "Generator":		"Unix Makefiles",
-	  "OS":				"Linux x86_64",
-	  "Defines":		""
-	},
-	{
-	  "DockerImage":	"desertbit/crossbuild:linux-armv7",
-	  "Generator":		"Unix Makefiles",
-	  "OS":				"Linux RasPi",
-	  "Defines":		""
-	},
-	{
-	  "DockerImage":	"dockcross/windows-static-x86:latest",
-	  "Generator":		"Unix Makefiles",
-	  "OS":				"Windows x86",
-	  "Defines":		""
-	},
-	{
-	  "DockerImage":	"dockcross/windows-static-x64:latest",
-	  "Generator":		"Unix Makefiles",
-	  "OS":				"Windows x86_64",
+	  "OS":			"Windows x86_64",
 	  "Defines":		""
 	}
   ]

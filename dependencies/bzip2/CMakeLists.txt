@@ -21,7 +21,15 @@
 
 cmake_minimum_required(VERSION 3.0.0)
 
-file(GLOB SOURCES src/*.c)
+file(GLOB SOURCES
+    src/blocksort.c
+    src/huffman.c
+    src/crctable.c
+    src/randtable.c
+    src/compress.c
+    src/decompress.c
+    src/bzlib.c
+)
 
 file(GLOB HEADERS src/*.h)
 
@@ -38,12 +46,16 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/${BIN_DIR})
 message(${PROJECT_SOURCE_DIR}/lib)
 
 if(APPLE)
-    add_library(${TARGET_NAME} STATIC ${SOURCES} ${HEADERS})
+    add_library(${TARGET_NAME} ${SOURCES} ${HEADERS})
 
     # Enable ARC (automatic reference counting) for OS X build
     set_property(
-        TARGET ${TARGET_NAME} APPEND_STRING PROPERTY COMPILE_FLAGS "-fobjc-arc"
+            TARGET ${TARGET_NAME} APPEND_STRING PROPERTY COMPILE_FLAGS "-fobjc-arc"
     )
 else()
-    add_library(${TARGET_NAME} STATIC ${SOURCES} ${HEADERS})
+    add_library(${TARGET_NAME} ${SOURCES} ${HEADERS})
+endif()
+
+if(MSVC)
+    target_compile_definitions(${TARGET_NAME} PRIVATE -DSTDERR_FILENO=2)
 endif()

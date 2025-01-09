@@ -10,3 +10,6 @@
 [submodule "dependencies/wolfssl"]
 	path = dependencies/wolfssl
 	url = https://github.com/wolfSSL/wolfssl
+[submodule "dependencies/mingw_stdthreads"]
+	path = dependencies/mingw_stdthreads
+	url = https://github.com/meganz/mingw-std-threads

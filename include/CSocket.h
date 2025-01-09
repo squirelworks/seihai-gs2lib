@@ -22,6 +22,8 @@
 #ifndef CSOCKET_H
 #define CSOCKET_H
 
+#pragma once
+
 // Defines
 //#define SOCK_BUFFER						8192
 //#define SEND_BUFFER						4096

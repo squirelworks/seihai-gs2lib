@@ -27,7 +27,7 @@
 */
 // PLI_UNKNOWN## are packets sent by the client whose
 // purpose is unknown.
-enum
+typedef enum PlayerToServer
 {
 	PLI_LEVELWARP		= 0,
 	PLI_BOARDMODIFY		= 1,
@@ -71,9 +71,11 @@ enum
 	PLI_MAPINFO			= 39,
 	PLI_SHOOT			= 40,
 	PLI_SERVERWARP		= 41,
+	PLI_MUTEPLAYER		= 43,	// Triggered via playerlist -> mute, looks like {GSHORT playerId}{GBYTE 1/0}
 	PLI_PROCESSLIST		= 44,
 	PLI_UNKNOWN46		= 46,	// Always is 1.  Might be a player count for the gmap level.
-	PLI_REQUESTUPDATEPACKAGE		= 47,	// Seems to tell the server the modTime of update files.  Used for client updates.
+	PLI_VERIFYWANTSEND	= 47,	// {47}{GINT5:CRC32 Checksum]{GSTRING: Filename} - Check if the file is out of date, and if so send it
+	PLI_SHOOT2			= 48,
 	PLI_RAWDATA			= 50,
 	PLI_RC_SERVEROPTIONSGET		= 51,
 	PLI_RC_SERVEROPTIONSSET		= 52,
@@ -139,6 +141,9 @@ enum
 	PLI_NC_WEAPONADD			= 117,	// {117}{CHAR weapon length}{weapon}{CHAR image length}{image}{code}
 	PLI_NC_WEAPONDELETE			= 118,	// {118}{weapon}
 	PLI_NC_CLASSDELETE			= 119,	// {119}{class}
+
+	PLI_REQUESTUPDATEBOARD		= 130,  // {130}{CHAR level length}{level}{INT5 modtime}{SHORT x}{SHORT y}{SHORT width}{SHORT height}
+
 	PLI_NC_LEVELLISTGET			= 150,	// {150}
 	PLI_NC_LEVELLISTSET			= 151,	// {151}{GSTRING levels}
 
@@ -148,17 +153,17 @@ enum
 	PLI_RC_LARGEFILESTART		= 155,
 	PLI_RC_LARGEFILEEND			= 156,
 
-	PLI_UNKNOWN157				= 157,	// Something to do with ganis.
+	PLI_UPDATEGANI				= 157,	// Something to do with ganis.		-- Likely: PLI_UPDATEGANI [similar to UPDATECLASS], replies with 253? multiple replies in one
 	PLI_UPDATESCRIPT			= 158,	// {158}{script} Requests a script from the server.
-	PLI_UPDATEPACKAGEREQUESTFILE				= 159,	// {159]{(char)order?]{packagefilename}{modtime}
+	PLI_UPDATEPACKAGEREQUESTFILE= 159,	// {159]{(char)order?]{packagefilename}{modtime}
 	PLI_RC_FOLDERDELETE			= 160,
 	PLI_UPDATECLASS				= 161,	// {161}{INT5 modtime}{name} Class request.
 	PLI_RC_UNKNOWN162			= 162,	// Blank packet, sent by RC3 beta.
-    PLI_SET_ENC_KEY             = 252,  // Set AES / RC4 encryption key and init vector
-    PLI_BUNDLE                  = 253   // Bundled packets contain multiple packets
-};
+	PLI_SET_ENC_KEY             = 252,  // Set AES / RC4 encryption key and init vector
+	PLI_BUNDLE                  = 253   // Bundled packets contain multiple packets
+} PlayerToServer;
 
-enum
+typedef enum ServerToPlayer
 {
 	PLO_LEVELBOARD				= 0,
 	PLO_LEVELLINK				= 1,
@@ -250,16 +255,16 @@ enum
 	PLO_FILE					= 102,
 	PLO_RC_MAXUPLOADFILESIZE	= 103,	// {GINT5} - Upload file size limit in bytes. Default to 20 mebibytes
 	PLO_UNKNOWN104				= 104,	// Valid message in 5.07 and 6.037.  The code it uses is unique. -Codr
-	PLO_UPDATEPACKAGESIZE				= 105,	// Valid message in 5.07 and 6.037.  The code it uses is unique. -Codr
-	PLO_UPDATEPACKAGEDONE				= 106,	// Valid message in 5.07 and 6.037.  The code it uses is unique. -Codr
-	PLO_UNKNOWN107				= 107,	// Basically PLO_LEVELBOARD for extra level layers.
+	PLO_UPDATEPACKAGESIZE		= 105,	// Valid message in 5.07 and 6.037.  The code it uses is unique. -Codr
+	PLO_UPDATEPACKAGEDONE		= 106,	// Valid message in 5.07 and 6.037.  The code it uses is unique. -Codr
+	PLO_BOARDLAYER				= 107,	// Basically PLO_LEVELBOARD for extra level layers.
 	PLO_UNKNOWN109				= 109,	// Valid message in 6.037. -Codr
 	PLO_UNKNOWN111				= 111,	// Valid message in 6.037. -Codr
 	PLO_UNKNOWN124				= 124,	// 5/26/2019: RC3 receives this, only hint I seen was regarding receiving player flags? Didn't try to test it though
 	PLO_NPCBYTECODE				= 131,	// Compiled Torque-script for an NPC. {131}{INT3 id}{code}
 	PLO_UNKNOWN132				= 132,	// Valid message in 5.07.  The code it uses is unique.  Unhandled by 6.037. -Codr
 	PLO_UNKNOWN133				= 133,	// Valid message in 5.07.  The code it uses is unique.  Unhandled by 6.037. -Codr
-	PLO_UNKNOWN134				= 134,	// Might be used for package downloads.
+	PLO_GANISCRIPT				= 134,	// Might be used for package downloads. Looks to send gani scripts to client
 	PLO_NPCWEAPONSCRIPT			= 140,	// {140}{INT2 info_length}{script}
 	PLO_NPCDEL2					= 150,	// {150}{CHAR level_length}{level}{INT3 npcid}
 	PLO_HIDENPCS				= 151,
@@ -301,19 +306,19 @@ enum
 	PLO_NC_CLASSDELETE			= 188,	// {188}{class}  Codr note: Unhandled by 5.07+.
 	PLO_MOVE2					= 189,	// {189}{INT id}...
 	PLO_UNKNOWN190				= 190,	// Was blank.  Sent before weapon list. NOTE: Sending this packet makes the client login to irc, request bantypes, pmguilds, pmservers, globalpms, buddytracking and stuff... Mainly tied to setTex
-	PLO_UNKNOWN191				= 191,	// Valid message in 5.07 and 6.037.  The code it uses is unique. -Codr
+	PLO_SHOOT2					= 191,	// Valid message in 5.07 and 6.037.  The code it uses is unique. -Codr
 	PLO_NC_WEAPONGET			= 192,	// {192}{CHAR name length}{name}{CHAR image length}{image}{script}  Codr note: Unhandled by 5.07+.
 	PLO_UNKNOWN193				= 193,	// Valid message in 5.07.  The code it uses is unique.  The first parameter is likely a 5-byte integer.  There may be more.  Unhandled by 6.037. -Codr
-	PLO_CLEARWEAPONS			= 194,	// Was blank.  Sent before weapon list. 
+	PLO_CLEARWEAPONS			= 194,	// Was blank.  Sent before weapon list.
 	PLO_UNKNOWN195				= 195,	// Something to do with ganis.  [195] )twiz-icon"SETBACKTO "
 
 	// Seems to register NPCs or something on the client.
 	// Also is related to PLI_UPDATESCRIPT as it sends the last modification time of the NPC/weapon.  The v5 client stores weapon scripts offline.
 	PLO_UNKNOWN197				= 197,	// Seems to register npcs on the client.  Also is used by client to see if it needs to get a newer version of the offline cache of the NPC.
 	PLO_UNKNOWN198				= 198,	// Valid message in 6.037. -Codr
-    PLO_SET_ENC_KEY             = 252,  // Set AES / RC4 encryption key and init vector
-    PLO_BUNDLE                  = 253   // Bundled packets contain multiple packets
-};
+	PLO_SET_ENC_KEY             = 252,  // Set AES / RC4 encryption key and init vector
+	PLO_BUNDLE                  = 253   // Bundled packets contain multiple packets
+} ServerToPlayer;
 
 enum
 {
@@ -358,7 +363,7 @@ enum
 /*
 	Serverlist Enumerators
 */
-enum
+typedef enum ServerToListServer
 {
 	SVO_SETNAME			= 0,
 	SVO_SETDESC			= 1,
@@ -393,9 +398,9 @@ enum
 	SVO_REGISTERV3		= 30,
 	SVO_SENDTEXT		= 31,
 	SVO_PACKETCOUNT,
-};
+} ServerToListServer;
 
-enum
+typedef enum ListServerToServer
 {
 	SVI_VERIACC			= 0,	// deprecated
 	SVI_VERIGUILD		= 1,
@@ -419,9 +424,10 @@ enum
 	SVI_REQUESTTEXT		= 19,
 	SVI_SENDTEXT		= 20,
 	SVI_PMPLAYER		= 29,
+	SVI_ASSIGNPCID		= 30,
 	SVI_PING			= 99,
 	SVI_RAWDATA			= 100,
 	SVI_PACKETCOUNT
-};
+} ListServerToServer;
 
 #endif

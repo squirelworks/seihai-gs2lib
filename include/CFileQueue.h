@@ -43,7 +43,7 @@ class CFileQueue
 
 		bool canSend();
 
-		void sendCompress();
+		void sendCompress(bool forceSendFiles = false);
 
 	private:
 		CSocket* sock;
@@ -57,6 +57,7 @@ class CFileQueue
 		CEncryption out_codec;
 
 		int bytesSentWithoutFile;
+		int sendCallsWithoutData = 0;
 };
 
 #endif

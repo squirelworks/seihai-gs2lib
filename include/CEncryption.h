@@ -53,7 +53,7 @@ class CEncryption
 		CString encrypt(CString pBuf);
 		void limit(int32_t limit);
 		int limitFromType(uint8_t type);
-		void setGen(uint32_t gen)		{ m_gen = gen; if (m_gen > 5) m_gen = 5; }
+		void setGen(uint32_t gen)		{ m_gen = gen; if (m_gen > 6) m_gen = 6; }
 		uint32_t getGen()				{ return m_gen; }
 
 	private:
@@ -61,6 +61,6 @@ class CEncryption
 		uint32_t	m_iterator;
 		int32_t		m_limit;
 		uint32_t	m_gen;
-}; 
+};
 
 #endif
