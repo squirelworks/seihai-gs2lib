@@ -90,6 +90,18 @@ CString::CString(const std::string& pString)
 	_internalBuffer[0] = 0;
 }
 
+CString::CString(const std::string_view& pString)
+	: _heapBuffer(nullptr), buffer(_internalBuffer), buffc(30), sizec(0), readc(0), writec(0)
+{
+	if (pString.length())
+	{
+		write(pString.data(), pString.length());
+		return;
+	}
+
+	_internalBuffer[0] = 0;
+}
+
 CString::CString(const CString& pString)
 	: _heapBuffer(nullptr), buffer(_internalBuffer), buffc(30), sizec(0), readc(0), writec(0)
 {
@@ -906,11 +918,66 @@ int CString::find(const CString& pString, int pStart) const
 	return -1;
 }
 
+int CString::find(const std::string_view& pString, int pStart) const
+{
+	const char* obuffer = pString.data();
+	const int olen = pString.length();
+	for (auto i = pStart; i <= sizec - olen; ++i)
+	{
+		if (buffer[i] == 0)
+		{
+			if (olen == 0) return i;
+			else continue;
+		}
+		if (memcmp(buffer + i, obuffer, olen) == 0)
+			return i;
+	}
+	return -1;
+}
+
+int CString::find(const char* pString, int pStart) const
+{
+	const char* obuffer = pString;
+	const int olen = strlen(pString);
+	for (auto i = pStart; i <= sizec - olen; ++i)
+	{
+		if (buffer[i] == 0)
+		{
+			if (olen == 0) return i;
+			else continue;
+		}
+		if (memcmp(buffer + i, obuffer, olen) == 0)
+			return i;
+	}
+	return -1;
+}
+
 int CString::findi(const CString& pString, int pStart) const
 {
 	for (auto i = pStart; i <= length() - pString.length(); ++i)
 	{
 		if (strncasecmp(&buffer[i], pString.text(), pString.length()) == 0)
+			return i;
+	}
+	return -1;
+}
+
+int CString::findi(const std::string_view& pString, int pStart) const
+{
+	for (auto i = pStart; i <= length() - pString.length(); ++i)
+	{
+		if (strncasecmp(&buffer[i], pString.data(), pString.length()) == 0)
+			return i;
+	}
+	return -1;
+}
+
+int CString::findi(const char* pString, int pStart) const
+{
+	auto len = strlen(pString);
+	for (auto i = pStart; i <= length() - len; ++i)
+	{
+		if (strncasecmp(&buffer[i], pString, len) == 0)
 			return i;
 	}
 	return -1;
@@ -1410,7 +1477,39 @@ bool operator==(const CString& pString1, const CString& pString2)
 	return false;
 }
 
+bool operator==(const CString& pString1, const std::string_view& pString2)
+{
+	if (pString1.length() == pString2.length())
+	{
+		if (memcmp(pString1.text(), pString2.data(), pString1.length()) == 0)
+			return true;
+	}
+
+	return false;
+}
+
+bool operator==(const CString& pString1, const char* pString2)
+{
+	if (pString1.length() == strlen(pString2))
+	{
+		if (memcmp(pString1.text(), pString2, pString1.length()) == 0)
+			return true;
+	}
+
+	return false;
+}
+
 bool operator!=(const CString& pString1, const CString& pString2)
+{
+	return !(pString1 == pString2);
+}
+
+bool operator!=(const CString& pString1, const std::string_view& pString2)
+{
+	return !(pString1 == pString2);
+}
+
+bool operator!=(const CString& pString1, const char* pString2)
 {
 	return !(pString1 == pString2);
 }

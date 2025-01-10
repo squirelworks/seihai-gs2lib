@@ -36,6 +36,7 @@ c:\mingw\bin\../lib/gcc/mingw32/4.6.2/include/c++/cstdio:166:11: erreur: '::snpr
 #include <cstdint>
 #include <cstring>
 #include <string>
+#include <string_view>
 #include <vector>
 #include <algorithm>
 
@@ -65,6 +66,7 @@ class CString
 		CString(const char *pString);
 		CString(const CString& pString);
 		CString(const std::string& pString);
+		CString(const std::string_view& pString);
 		CString(char value);
 		CString(double value);
 		CString(float value);
@@ -138,7 +140,11 @@ class CString
 		CString zuncompress(unsigned int buffSize = 65536) const;
 
 		int find(const CString& pString, int pStart = 0) const;
+		int find(const std::string_view& pString, int pStart = 0) const;
+		int find(const char* pString, int pStart = 0) const;
 		int findi(const CString& pString, int pStart = 0) const;
+		int findi(const std::string_view& pString, int pStart = 0) const;
+		int findi(const char* pString, int pStart = 0) const;
 		int findl(char pChar) const;
 		std::vector<CString> tokenize(const CString& pString = " ", bool keepEmpty = false) const;
 		std::vector<CString> tokenizeConsole() const;
@@ -194,7 +200,11 @@ class CString
 		//operator const char*() const;
 
 		friend bool operator==(const CString& pString1, const CString& pString2);
+		friend bool operator==(const CString& pString1, const std::string_view& pString2);
+		friend bool operator==(const CString& pString1, const char* pString2);
 		friend bool operator!=(const CString& pString1, const CString& pString2);
+		friend bool operator!=(const CString& pString1, const std::string_view& pString2);
+		friend bool operator!=(const CString& pString1, const char* pString2);
 		friend bool operator<(const CString& pString1, const CString& pString2);
 		friend bool operator>(const CString& pString1, const CString& pString2);
 		friend bool operator<=(const CString& pString1, const CString& pString2);
