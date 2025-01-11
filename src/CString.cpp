@@ -1477,6 +1477,17 @@ bool operator==(const CString& pString1, const CString& pString2)
 	return false;
 }
 
+bool operator==(const CString& pString1, const std::string& pString2)
+{
+	if (pString1.length() == pString2.length())
+	{
+		if (memcmp(pString1.text(), pString2.data(), pString1.length()) == 0)
+			return true;
+	}
+
+	return false;
+}
+
 bool operator==(const CString& pString1, const std::string_view& pString2)
 {
 	if (pString1.length() == pString2.length())
@@ -1500,6 +1511,11 @@ bool operator==(const CString& pString1, const char* pString2)
 }
 
 bool operator!=(const CString& pString1, const CString& pString2)
+{
+	return !(pString1 == pString2);
+}
+
+bool operator!=(const CString& pString1, const std::string& pString2)
 {
 	return !(pString1 == pString2);
 }

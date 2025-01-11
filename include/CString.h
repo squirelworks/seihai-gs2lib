@@ -200,9 +200,11 @@ class CString
 		//operator const char*() const;
 
 		friend bool operator==(const CString& pString1, const CString& pString2);
+		friend bool operator==(const CString& pString1, const std::string& pString2);
 		friend bool operator==(const CString& pString1, const std::string_view& pString2);
 		friend bool operator==(const CString& pString1, const char* pString2);
 		friend bool operator!=(const CString& pString1, const CString& pString2);
+		friend bool operator!=(const CString& pString1, const std::string& pString2);
 		friend bool operator!=(const CString& pString1, const std::string_view& pString2);
 		friend bool operator!=(const CString& pString1, const char* pString2);
 		friend bool operator<(const CString& pString1, const CString& pString2);
