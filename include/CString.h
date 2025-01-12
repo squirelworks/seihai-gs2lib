@@ -89,6 +89,7 @@ class CString
 		char * text();
 		const char * text() const;
 		std::string toString() const;
+		std::string_view toStringView() const;
 		int bytesLeft() const;
 		int length() const;
 		int readPos() const;
@@ -374,6 +375,11 @@ inline const char * CString::text() const
 inline std::string CString::toString() const
 {
 	return std::string(text(), length());
+}
+
+inline std::string_view CString::toStringView() const
+{
+	return std::string_view(text(), length());
 }
 
 inline int CString::bytesLeft() const
