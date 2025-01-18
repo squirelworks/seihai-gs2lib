@@ -134,7 +134,11 @@ bool CSocketManager::update(long sec, long usec)
 	for (auto i = stubList.begin(); i != stubList.end();)
 	{
 		CSocketStub* stub = *i;
-		if (stub == nullptr) continue;
+		if (stub == nullptr)
+		{
+			++i;
+			continue;
+		}
 
 		SOCKET sock = stub->getSocketHandle();
 		if (sock != INVALID_SOCKET)
@@ -142,7 +146,7 @@ bool CSocketManager::update(long sec, long usec)
 			bool success = true;
 			if (success && FD_ISSET(sock, &set_read)) success = stub->onRecv();
 			if (success && FD_ISSET(sock, &set_write)) success = stub->onSend();
-			if (!success)
+			if (!success && *i != nullptr)
 			{
 				stub->onUnregister();
 				*i = nullptr;
@@ -152,8 +156,11 @@ bool CSocketManager::update(long sec, long usec)
 	}
 
 	// Add new stubs.
-	stubList.insert(stubList.end(), newStubs.begin(), newStubs.end());
-	newStubs.clear();
+	if (!newStubs.empty())
+	{
+		stubList.insert(stubList.end(), newStubs.begin(), newStubs.end());
+		newStubs.clear();
+	}
 
 	return true;
 }
