@@ -233,6 +233,7 @@ class CString
 
 		// Graal Packing <.<.
 		CString& writeGChar(const unsigned char pData);
+		CString& writeGCharUnsafe(const unsigned char pData);
 		CString& writeGShort(const unsigned short pData);
 		CString& writeGInt(const unsigned int pData);
 		CString& writeGInt4(const unsigned int pData);

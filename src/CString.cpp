@@ -20,6 +20,7 @@
 */
 
 #include <cassert>
+#include <stdexcept>
 #include "IDebug.h"
 #include "CString.h"
 #include "bzlib.h"
@@ -357,7 +358,7 @@ void CString::clear(size_t size)
 
 	sizec = readc = writec = 0;
 	buffc = std::max(size_t{ 1 }, size);
-	buffer[0] = 0;
+	buffer[0] = '\0';
 }
 
 void CString::resize(size_t size)
@@ -1639,6 +1640,16 @@ CString& CString::writeGChar(const unsigned char pData)
 	return *this;
 }
 
+CString& CString::writeGCharUnsafe(const unsigned char pData)
+{
+	if (pData == 233)
+		throw std::runtime_error("Tried to Graal-pack byte value 233, which will evaluate to a newline.");
+
+	unsigned char val = pData + 32;
+	write((char*)&val, 1);
+	return *this;
+}
+
 CString& CString::writeGShort(const unsigned short pData)
 {
 	unsigned short t = pData;
@@ -1669,7 +1680,7 @@ CString& CString::writeGInt(const unsigned int pData)
 	if (val[1] > 223) val[1] = 223;
 	val[2] = t - (val[1] << 7);
 
-	for (int a = 0;a < 3;++a) val[a] += 32;
+	for (int a = 0; a < 3; ++a) val[a] += 32;
 	write((char *)&val,3);
 
 	return *this;
@@ -1691,7 +1702,7 @@ CString& CString::writeGInt4(const unsigned int pData)
 	if (val[2] > 223) val[2] = 223;
 	val[3] = t - (val[2] << 7);
 
-	for (int a = 0;a < 4;++a) val[a] += 32;
+	for (int a = 0; a < 4; ++a) val[a] += 32;
 	write((char *)&val,4);
 
 	return *this;
@@ -1717,7 +1728,7 @@ CString& CString::writeGInt5(const unsigned long long pData)
 	if (val[3] > 223) val[3] = 223;
 	val[4] = (t - ((unsigned long long)val[3] << 7)) & 0xFF;
 
-	for (int a = 0;a < 5;++a) val[a] += 32;
+	for (int a = 0; a < 5; ++a) val[a] += 32;
 	write((char *)&val,5);
 
 	return *this;
@@ -1734,6 +1745,8 @@ char CString::readGChar()
 // max: 0x705F 28767
 short CString::readGShort()
 {
+	// 0x1020 = (32 << 7) + 32
+	// Instead of adding every single individual byte, we can just do a single add at the end.
 	unsigned char val[2];
 	read((char*)val, 2);
 	return (val[0] << 7) + val[1] - 0x1020;
