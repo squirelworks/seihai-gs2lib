@@ -21,7 +21,6 @@
 
 #include <cassert>
 #include <stdexcept>
-#include "IDebug.h"
 #include "CString.h"
 #include "bzlib.h"
 #include "zlib.h"

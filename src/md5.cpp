@@ -1,5 +1,3 @@
-#include "IDebug.h"
-
 /* Taken from ReHash (www.reichlsoft.de.vu) and released
  * under GPL/LGPL with permission from ReHash author
  * Dominik Reichl <dominik.reichl@t-online.de>, Germany

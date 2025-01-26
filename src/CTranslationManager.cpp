@@ -19,7 +19,6 @@
  * along with GS2Emu. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "IDebug.h"
 #include "CTranslationManager.h"
 
 // -- Function: Translate String -- //

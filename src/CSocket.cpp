@@ -19,7 +19,6 @@
  * along with GS2Emu. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "IDebug.h"
 #include <thread>
 
 #if defined(_WIN32) || defined(_WIN64)

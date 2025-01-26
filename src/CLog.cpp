@@ -19,8 +19,6 @@
  * along with GS2Emu. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "IDebug.h"
-
 #include <stdio.h>
 #include <string.h>
 #include <stdarg.h>

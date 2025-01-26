@@ -18,7 +18,6 @@
  * You should have received a copy of the GNU General Public License
  * along with GS2Emu. If not, see <http://www.gnu.org/licenses/>.
 */
-#include "IDebug.h"
 #include "CEncryption.h"
 
 const uint32_t CEncryption::ITERATOR_START[6] = {0, 0, 0x04A80B38, 0x4A80B38, 0x4A80B38, 0};
