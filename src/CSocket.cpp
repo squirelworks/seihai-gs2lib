@@ -882,14 +882,15 @@ int CSocket::socketSystemInit()
 void CSocket::socketSystemDestroy()
 {
 	using namespace std::chrono_literals;
-	// errorOut("debuglog.txt", ":: Destroying socket system...");
 #if defined(_WIN32) || defined(_WIN64)
 	int intTimeCheck = 0;
 
 	while (intTimeCheck++ < 3)
 	{
-		if (WSACleanup() == SOCKET_ERROR)
-			SLOG("[CSocket::socketSystemDestroy] WSACleanup() returned error: %s\n", errorMessage(identifyError()));
+		if (WSACleanup() == 0)
+			break;
+
+		SLOG("[CSocket::socketSystemDestroy] WSACleanup() returned error: %s\n", errorMessage(identifyError()));
 		std::this_thread::sleep_for(1s);
 	}
 #endif
