@@ -193,12 +193,11 @@ class CString
 		/* Operators */
 		const char& operator[](const int& pIndex) const;
 		char& operator[](const int& pIndex);
-
 		CString& operator=(const CString& pString);
 		CString& operator<<(const CString& pString);
 		CString& operator+=(const CString& pString);
 		CString operator+(const CString& pString);
-		//operator const char*() const;
+		operator std::string_view() const;
 
 		friend bool operator==(const CString& pString1, const CString& pString2);
 		friend bool operator==(const CString& pString1, const std::string& pString2);
@@ -321,6 +320,11 @@ inline const char& CString::operator[](const int& idx) const
 inline char& CString::operator[](const int& idx)
 {
 	return buffer[idx];
+}
+
+inline CString::operator std::string_view() const
+{
+	return toStringView();
 }
 
 inline int CString::write(const CString& pString)
