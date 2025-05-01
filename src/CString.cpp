@@ -26,6 +26,8 @@
 #include "zlib.h"
 
 #if defined(_WIN32) || defined(_WIN64)
+	#include <windows.h>
+
 	extern "C" {
 		char * strsep (char **stringp, const char *delim)
 		{
