@@ -39,6 +39,7 @@ c:\mingw\bin\../lib/gcc/mingw32/4.6.2/include/c++/cstdio:166:11: erreur: '::snpr
 #include <string_view>
 #include <vector>
 #include <algorithm>
+#include <concepts>
 
 /*
 #include "bzlib.h"
@@ -248,6 +249,8 @@ class CString
 		inline unsigned int readGUInt();
 		inline unsigned int readGUInt4();
 		inline unsigned int readGUInt5();
+
+		void readGInto(auto& out);
 
 	protected:
 		char *buffer;
@@ -510,6 +513,31 @@ inline CString& CString::guntokenizeI()
 {
 	*this = guntokenize();
 	return *this;
+}
+
+inline void CString::readGInto(auto& out)
+{
+	using V = std::remove_cvref_t<decltype(out)>;
+	static_assert(std::same_as<V, char> || std::same_as<V, signed char> || std::same_as<V, unsigned char>
+		|| std::same_as<V, short> || std::same_as<V, unsigned short>
+		|| std::same_as<V, int> || std::same_as<V, unsigned int>
+		|| std::same_as<V, long long>,
+		"Unsupported type for readGInto.");
+
+	if constexpr (std::same_as<V, char> || std::same_as<V, signed char>)
+		out = readGChar();
+	if constexpr (std::same_as<V, unsigned char>)
+		out = readGUChar();
+	if constexpr (std::same_as<V, short>)
+		out = readGShort();
+	if constexpr (std::same_as<V, unsigned short>)
+		out = readGUShort();
+	if constexpr (std::same_as<V, int>)
+		out = readGInt();
+	if constexpr (std::same_as<V, unsigned int>)
+		out = readGUInt();
+	if constexpr (std::same_as<V, long long>)
+		out = readGInt5();
 }
 
 /*
