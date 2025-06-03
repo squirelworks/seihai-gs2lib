@@ -92,7 +92,7 @@ node('master') {
 	checkout(scm);
 
     withCredentials([usernamePassword(credentialsId: 'githubgraal2', passwordVariable: 'GIT_PASSWORD', usernameVariable: 'GIT_USERNAME')]) {
-        sh("git push https://${GIT_USERNAME}:${GIT_PASSWORD}@bitbucket.org/xtjoeytx/gs2lib.git HEAD:refs/heads/${fixed_job_name}");
+        sh("git push --force https://${GIT_USERNAME}:${GIT_PASSWORD}@bitbucket.org/xtjoeytx/gs2lib.git HEAD:refs/heads/${fixed_job_name}");
     }
 
 	env.COMMIT_MSG = sh (
