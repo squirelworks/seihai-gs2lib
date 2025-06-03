@@ -216,8 +216,12 @@ class CString
 
 		/* Data-Packing Functions */
 		CString& operator>>(const char pData);
+		CString& operator>>(const signed char pData);
+		CString& operator>>(const unsigned char pData);
 		CString& operator>>(const short pData);
+		CString& operator>>(const unsigned short pData);
 		CString& operator>>(const int pData);
+		CString& operator>>(const unsigned int pData);
 		CString& operator>>(const long long pData);
 		CString& operator<<(const char pData);
 		CString& operator<<(const short pData);
@@ -337,15 +341,35 @@ inline int CString::write(const CString& pString)
 
 inline CString& CString::operator>>(const char pData)
 {
+	return writeGChar(static_cast<unsigned char>(pData));
+}
+
+inline CString& CString::operator>>(const signed char pData)
+{
+	return writeGChar(static_cast<unsigned char>(pData));
+}
+
+inline CString& CString::operator>>(const unsigned char pData)
+{
 	return writeGChar(pData);
 }
 
 inline CString& CString::operator>>(const short pData)
 {
+	return writeGShort(static_cast<unsigned short>(pData));
+}
+
+inline CString& CString::operator>>(const unsigned short pData)
+{
 	return writeGShort(pData);
 }
 
 inline CString& CString::operator>>(const int pData)
+{
+	return writeGInt(static_cast<unsigned int>(pData));
+}
+
+inline CString& CString::operator>>(const unsigned int pData)
 {
 	return writeGInt(pData);
 }
