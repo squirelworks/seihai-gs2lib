@@ -1716,18 +1716,17 @@ CString& CString::writeGInt5(const unsigned long long pData)
 
 	unsigned char val[5];
 
-	val[0] = (t >> 28) & 0xFF;
-	if (val[0] > 15) val[0] = 15; //This is capped low because higher just results in values over 0xFFFFFFFF.
+	val[0] = (t >> 28) & 0x0F;
 	t -= ((unsigned long long)val[0] << 28);
-	val[1] = (t >> 21) & 0xFF;
+	val[1] = (t >> 21) & 0x7F;
 	if (val[1] > 223) val[1] = 223;
 	t -= ((unsigned long long)val[1] << 21);
-	val[2] = (t >> 14) & 0xFF;
+	val[2] = (t >> 14) & 0x7F;
 	if (val[2] > 223) val[2] = 223;
 	t -= ((unsigned long long)val[2] << 14);
-	val[3] = (t >> 7) & 0xFF;
+	val[3] = (t >> 7) & 0x7F;
 	if (val[3] > 223) val[3] = 223;
-	val[4] = (t - ((unsigned long long)val[3] << 7)) & 0xFF;
+	val[4] = (t - ((unsigned long long)val[3] << 7)) & 0x7F;
 
 	for (int a = 0; a < 5; ++a) val[a] += 32;
 	write((char *)&val,5);
@@ -1770,12 +1769,12 @@ int CString::readGInt4()
 }
 
 // max: 0xFFFFFFFF 4294967295
-//The client doesn't store these in multiple registers, so the maximum value is capped.
+// The client stores a full uint32_t.
 unsigned int CString::readGInt5()
 {
 	unsigned char val[5];
 	read((char*)val, 5);
-	return (((((((val[0] << 7) + val[1]) << 7) + val[2]) << 7) + val[3]) << 7) + val[4] - 0x4081020;
+	return ((((((unsigned int((val[0]) << 7) + val[1]) << 7) + val[2]) << 7) + val[3]) << 7) + val[4] - 0x4081020;
 }
 
 /*

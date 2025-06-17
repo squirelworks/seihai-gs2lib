@@ -67,6 +67,10 @@
 	#include <winsock2.h>
 	#include <ws2tcpip.h>
 	#include <windows.h>
+
+	#undef ERROR
+	#undef TRANSPARENT
+	#undef CALLBACK
 #else
 	#include <netinet/in.h>
  	#include <sys/socket.h>
