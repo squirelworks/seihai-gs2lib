@@ -1774,7 +1774,7 @@ unsigned int CString::readGInt5()
 {
 	unsigned char val[5];
 	read((char*)val, 5);
-	return ((((((unsigned int((val[0]) << 7) + val[1]) << 7) + val[2]) << 7) + val[3]) << 7) + val[4] - 0x4081020;
+	return ((((((static_cast<unsigned int>((val[0]) << 7) + val[1]) << 7) + val[2]) << 7) + val[3]) << 7) + val[4] - 0x4081020;
 }
 
 /*
