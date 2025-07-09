@@ -258,8 +258,8 @@ class CString
 
 	protected:
 		char *buffer;
-		int buffc, sizec, readc, writec;
 		char * _heapBuffer;
+		int buffc, sizec, readc, writec;
 		char _internalBuffer[INTERNAL_BUFFER_SIZE];
 	private:
 		static const char BASE64[];
@@ -269,12 +269,12 @@ class CString
 	Inline Functions
 */
 
-inline CString::CString() : _heapBuffer(0), buffer(_internalBuffer), buffc(30), sizec(0), readc(0), writec(0)
+inline CString::CString() : buffer(_internalBuffer), _heapBuffer(0), buffc(30), sizec(0), readc(0), writec(0)
 {
 	_internalBuffer[0] = 0;
 }
 
-inline CString::CString(char pChar) : _heapBuffer(0), buffer(_internalBuffer), buffc(30), sizec(1), readc(0), writec(1)
+inline CString::CString(char pChar) : buffer(_internalBuffer), _heapBuffer(0), buffc(30), sizec(1), readc(0), writec(1)
 {
 	_internalBuffer[0] = pChar;
 	_internalBuffer[1] = 0;

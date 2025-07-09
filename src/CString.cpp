@@ -64,7 +64,7 @@
 	Constructor ~ Deconstructor
 */
 CString::CString(const char *pString)
-	: _heapBuffer(nullptr), buffer(_internalBuffer), buffc(30), sizec(0), readc(0), writec(0)
+	: buffer(_internalBuffer), _heapBuffer(nullptr), buffc(30), sizec(0), readc(0), writec(0)
 {
 	if (pString != 0)
 	{
@@ -81,7 +81,7 @@ CString::CString(const char *pString)
 }
 
 CString::CString(const std::string& pString)
-	: _heapBuffer(nullptr), buffer(_internalBuffer), buffc(30), sizec(0), readc(0), writec(0)
+	: buffer(_internalBuffer), _heapBuffer(nullptr), buffc(30), sizec(0), readc(0), writec(0)
 {
 	if (pString.length())
 	{
@@ -93,7 +93,7 @@ CString::CString(const std::string& pString)
 }
 
 CString::CString(const std::string_view& pString)
-	: _heapBuffer(nullptr), buffer(_internalBuffer), buffc(30), sizec(0), readc(0), writec(0)
+	: buffer(_internalBuffer), _heapBuffer(nullptr), buffc(30), sizec(0), readc(0), writec(0)
 {
 	if (pString.length())
 	{
@@ -105,7 +105,7 @@ CString::CString(const std::string_view& pString)
 }
 
 CString::CString(const CString& pString)
-	: _heapBuffer(nullptr), buffer(_internalBuffer), buffc(30), sizec(0), readc(0), writec(0)
+	: buffer(_internalBuffer), _heapBuffer(nullptr), buffc(30), sizec(0), readc(0), writec(0)
 {
 	if (pString.length())
 	{
@@ -117,56 +117,56 @@ CString::CString(const CString& pString)
 }
 
 CString::CString(double val)
-	: _heapBuffer(nullptr), buffer(_internalBuffer), buffc(30), readc(0)
+	: buffer(_internalBuffer), _heapBuffer(nullptr), buffc(30), readc(0)
 {
 	sprintf(_internalBuffer, "%f", val);
 	sizec = writec = strlen(_internalBuffer);
 }
 
 CString::CString(float val)
-	: _heapBuffer(nullptr), buffer(_internalBuffer), buffc(30), readc(0)
+	: buffer(_internalBuffer), _heapBuffer(nullptr), buffc(30), readc(0)
 {
 	sprintf(_internalBuffer, "%.2f", val);
 	sizec = writec = strlen(_internalBuffer);
 }
 
 CString::CString(int val)
-	: _heapBuffer(nullptr), buffer(_internalBuffer), buffc(30), readc(0)
+	: buffer(_internalBuffer), _heapBuffer(nullptr), buffc(30), readc(0)
 {
 	sprintf(_internalBuffer, "%i", val);
 	sizec = writec = strlen(_internalBuffer);
 }
 
 CString::CString(unsigned int val)
-	: _heapBuffer(0), buffer(_internalBuffer), buffc(30), readc(0)
+	: buffer(_internalBuffer), _heapBuffer(0), buffc(30), readc(0)
 {
 	sprintf(_internalBuffer, "%u", val);
 	sizec = writec = strlen(_internalBuffer);
 }
 
 CString::CString(long val)
-	: _heapBuffer(nullptr), buffer(_internalBuffer), buffc(30), readc(0)
+	: buffer(_internalBuffer), _heapBuffer(nullptr), buffc(30), readc(0)
 {
 	sprintf(_internalBuffer, "%ld", val);
 	sizec = writec = strlen(_internalBuffer);
 }
 
 CString::CString(unsigned long val)
-	: _heapBuffer(nullptr), buffer(_internalBuffer), buffc(30), readc(0)
+	: buffer(_internalBuffer), _heapBuffer(nullptr), buffc(30), readc(0)
 {
 	sprintf(_internalBuffer, "%lu", val);
 	sizec = writec = strlen(_internalBuffer);
 }
 
 CString::CString(long long val)
-	: _heapBuffer(nullptr), buffer(_internalBuffer), buffc(30), readc(0)
+	: buffer(_internalBuffer), _heapBuffer(nullptr), buffc(30), readc(0)
 {
 	sprintf(_internalBuffer, "%lld", val);
 	sizec = writec = strlen(_internalBuffer);
 }
 
 CString::CString(unsigned long long val)
-	: _heapBuffer(nullptr), buffer(_internalBuffer), buffc(30), readc(0)
+	: buffer(_internalBuffer), _heapBuffer(nullptr), buffc(30), readc(0)
 {
 	sprintf(_internalBuffer, "%llu", val);
 	sizec = writec = strlen(_internalBuffer);
