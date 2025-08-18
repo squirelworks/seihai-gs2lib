@@ -53,7 +53,7 @@ typedef enum PlayerToServer
 	PLI_PUTNPC			= 21,
 	PLI_NPCDEL			= 22,
 	PLI_WANTFILE		= 23,
-	PLI_SHOWIMG			= 24,
+	PLI_SHOWIMGPLAYER	= 24,
 	PLI_UNKNOWN25		= 25,
 	PLI_HURTPLAYER		= 26,
 	PLI_EXPLOSION		= 27,
@@ -197,7 +197,7 @@ typedef enum ServerToPlayer
 	PLO_NPCDEL					= 29,
 	PLO_FILESENDFAILED			= 30,
 	PLO_FLAGDEL					= 31,
-	PLO_SHOWIMG					= 32,
+	PLO_SHOWIMGPLAYER			= 32,
 	PLO_NPCWEAPONADD			= 33,
 	PLO_NPCWEAPONDEL			= 34,
 	PLO_RC_ADMINMESSAGE			= 35,
@@ -282,7 +282,7 @@ typedef enum ServerToPlayer
 	PLO_NC_CLASSADD				= 163,	// {163}{class}  Codr note: Unhandled by 5.07+.
 	PLO_NC_LEVELDUMP			= 164,	// Unhandled by 5.07+. -Codr
 	PLO_MOVE					= 165,	// Unhandled by 6.037. -Codr
-	PLO_SHOWIMGPROPS			= 166,	// {166}{GINT3 npcId}{GCHAR index}{props} - index: val-42 (something special happens on index 9), props: {GCHAR prop} - 0: {GSTRING image}, 1: {GCHAR fX}, 2: {GCHAR fY}, 3: {GCHAR layer}, 4: {GSHORT imgPartX}{GSHORT y}{GCHAR width}{GCHAR height}, 5: {GCHAR particle ?}{GCHAR ?}{GCHAR ?}{GCHAR ?}, 6: {GCHAR particle ?}, 7: {GCHAR z? angle? -82, then double()}, 8: {GCHAR particle ? max 3}
+	PLO_SHOWIMGNPC				= 166,	// {166}{GINT3 npcId}{GCHAR index}{props} - index: val-42 (something special happens on index 9), props: {GCHAR prop} - 0: {GSTRING image}, 1: {GCHAR fX}, 2: {GCHAR fY}, 3: {GCHAR layer}, 4: {GSHORT imgPartX}{GSHORT y}{GCHAR width}{GCHAR height}, 5: {GCHAR particle ?}{GCHAR ?}{GCHAR ?}{GCHAR ?}, 6: {GCHAR particle ?}, 7: {GCHAR z? angle? -82, then double()}, 8: {GCHAR particle ? max 3}
 	PLO_NC_WEAPONLISTGET		= 167,	// {167}{CHAR name1 length}{name1}{CHAR name2 length}{name2}...  Codr note: Unhandled by 5.07+.
 	PLO_UNKNOWN168				= 168,	// {168} - Login server sends this.
 	PLO_UNKNOWN169				= 169,	// Valid message in 5.07.  It's strange... the parameter seems to be a direct pointer value which would be difficult for the server to know about unless the client actually sends that information.  I don't know what purpose that could serve, however.  Unhandled by 6.037. -Codr
