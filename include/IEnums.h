@@ -339,7 +339,7 @@ enum
 
 enum
 {
-	PLTYPE_AWAIT		= (int)(-1),
+	PLTYPE_AWAIT		= (int)(0x80000000),
 	PLTYPE_CLIENT		= (int)(1 << 0),
 	PLTYPE_RC			= (int)(1 << 1),
 	PLTYPE_NPCSERVER	= (int)(1 << 2),
