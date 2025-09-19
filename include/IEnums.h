@@ -73,7 +73,7 @@ typedef enum PlayerToServer
 	PLI_SERVERWARP		= 41,
 	PLI_MUTEPLAYER		= 43,	// Triggered via playerlist -> mute, looks like {GSHORT playerId}{GBYTE 1/0}
 	PLI_PROCESSLIST		= 44,
-	PLI_UNKNOWN46		= 46,	// Always is 1.  Might be a player count for the gmap level.
+	PLI_ENTERLEVEL		= 46,	// {46}{GCHAR 1} - Sent when the player enters a new level
 	PLI_VERIFYWANTSEND	= 47,	// {47}{GINT5:CRC32 Checksum]{GSTRING: Filename} - Check if the file is out of date, and if so send it
 	PLI_SHOOT2			= 48,
 	PLI_RAWDATA			= 50,
@@ -189,7 +189,7 @@ typedef enum ServerToPlayer
 	PLO_THROWCARRIED			= 21,
 	PLO_ITEMADD					= 22,
 	PLO_ITEMDEL					= 23,
-	PLO_NPCMOVED				= 24,	// What does this do? Joey: Apparently just hides the npc ... for level warps??
+	PLO_NPCMOVED				= 24,
 	PLO_SIGNATURE				= 25,
 	PLO_NPCACTION				= 26,	// What does this do?  Codr note: Unhandled by 6.037.
 	PLO_BADDYHURT				= 27,
@@ -203,7 +203,7 @@ typedef enum ServerToPlayer
 	PLO_RC_ADMINMESSAGE			= 35,
 	PLO_EXPLOSION				= 36,
 	PLO_PRIVATEMESSAGE			= 37,
-	PLO_PUSHAWAY				= 38,	// What does this do?
+	PLO_PUSHAWAY				= 38,	// {38}{GCHAR dx}{GCHAR dy} - dx is calculated as: dx * 0.0625 - 4.0, which is a range of -2.0 to 2.0 in 1/16 tile increments.
 	PLO_LEVELMODTIME			= 39,
 	PLO_HURTPLAYER				= 40,
 	PLO_STARTMESSAGE			= 41,	// Unhandled by 6.037. -Codr
@@ -254,7 +254,7 @@ typedef enum ServerToPlayer
 	PLO_BOARDPACKET				= 101,
 	PLO_FILE					= 102,
 	PLO_RC_MAXUPLOADFILESIZE	= 103,	// {103}{GINT5 uploadFileSize} - Upload file size limit in bytes. Default to 20 mebibytes.
-	PLO_UNKNOWN104				= 104,	// Valid message in 5.07 and 6.037.  The code it uses is unique. -Codr
+	PLO_UNKNOWN104				= 104,	// {104}{GSTRING data}  data: {GCHAR a}{GINT5 x1}{GINT5 x2} - x1 and x2 decode into an 8 byte value, gets thrown into a hash list.
 	PLO_UPDATEPACKAGESIZE		= 105,	// Valid message in 5.07 and 6.037.  The code it uses is unique. -Codr
 	PLO_UPDATEPACKAGEDONE		= 106,	// Valid message in 5.07 and 6.037.  The code it uses is unique. -Codr
 	PLO_BOARDLAYER				= 107,	// Basically PLO_LEVELBOARD for extra level layers.
@@ -264,7 +264,7 @@ typedef enum ServerToPlayer
 	PLO_UNKNOWN124				= 124,	// 5/26/2019: RC3 receives this, only hint I seen was regarding receiving player flags? Didn't try to test it though
 	PLO_NPCBYTECODE				= 131,	// {131}{GINT3 code}{bytecode}
 	PLO_UNKNOWN132				= 132,	// Valid message in 5.07.  The code it uses is unique.  Unhandled by 6.037. -Codr
-	PLO_UNKNOWN133				= 133,	// Valid message in 5.07.  The code it uses is unique.  Unhandled by 6.037. -Codr
+	PLO_UNKNOWN133				= 133,	// {133}{STRING} - TGraalUniverse::addClassScript(), might register a class?
 	PLO_GANISCRIPT				= 134,	// Might be used for package downloads. Looks to send gani scripts to client
 	PLO_NPCWEAPONSCRIPT			= 140,	// {140}{GSHORT info_length}{script}
 	PLO_NPCDEL2					= 150,	// {150}{GSTRING level}{GINT3 npcid}
@@ -297,23 +297,23 @@ typedef enum ServerToPlayer
 	PLO_SERVERWARP				= 178,
 	PLO_RPGWINDOW				= 179,
 	PLO_STATUSLIST				= 180,
-	PLO_UNKNOWN181				= 181,	// Valid message in 5.07.  The code it uses is unique.  Unhandled by 6.037. -Codr
+	PLO_UNKNOWN181				= 181,	// {181}{GSHORT ?}{GCHAR ?} - GCHAR is a toggle
 	PLO_LISTPROCESSES			= 182,
-	PLO_UNKNOWN183				= 183,	// onSendHaveWindow
-	PLO_UNKNOWN184				= 184,	// Valid message in 5.07.  The code it uses is unique.  The string "screenshots" is present in the code.  I didn't look in detail.  Unhandled by 6.037. -Codr
-	PLO_UNKNOWN185				= 185,	// Valid message in 5.07 and 6.037.  The code it uses is unique. -Codr
-	PLO_UNKNOWN186				= 186,	// Does something with ganis.
+	PLO_UNKNOWN183				= 183,	// {183}{GSTRINGLIST text} - onSendHaveWindow
+	PLO_TAKESCREENSHOT			= 184,	// {184}{STRING filename} - The string "screenshots" is present in the code, it seems to take a screenshot and safe as the filename.
+	PLO_UNKNOWN185				= 185,	// {185}{GCHAR a}{GCHAR b}{GCHAR c}{GCHAR d}{GCHAR e}{GCHAR f}[{GCHAR g}{GCHAR h}...] - a < 200 / b < 204 / e and f might be width/height? g-50, so it might be Z?  Maybe terrain heights?  h * (1/128) + g
+	PLO_BOARDMODIFY2			= 186,	// {186}{GSHORT x}{GSHORT y}{GCHAR width}{GCHAR height}{tiles}  tiles: {GSHORT tile}
 	PLO_UPDATEPACKAGEISUPDATED	= 187,	// Valid message in 5.07 and 6.037.  The code it uses is unique. -Codr
 	PLO_NC_CLASSDELETE			= 188,	// {188}{class}  Codr note: Unhandled by 5.07+.
 	PLO_MOVE2					= 189,	// {189}{INT id}...
 	PLO_SERVERLISTCONNECTED		= 190,	// {190} - the gserver connected to the listserver, informing the client it can log into IRC. NOTE: Sending this packet makes the client login to irc, request bantypes, pmguilds, pmservers, globalpms, buddytracking and stuff... Mainly tied to setText
 	PLO_SHOOT2					= 191,	// Valid message in 5.07 and 6.037.  The code it uses is unique. -Codr
 	PLO_NC_WEAPONGET			= 192,	// {192}{GSTRING name}{GSTRING image}{script}  Codr note: Unhandled by 5.07+.
-	PLO_UNKNOWN193				= 193,	// Valid message in 5.07.  The code it uses is unique.  The first parameter is likely a 5-byte integer.  There may be more.  Unhandled by 6.037. -Codr
+	PLO_UNKNOWN193				= 193,	// {193}{GINT5 ?}{?}
 	PLO_CLEARWEAPONS			= 194,	// {194} - Was blank.  Sent before weapon list.
 	PLO_LOADGANI				= 195,	// {195}{GSTRING gani}{STRINGLIST ?} - The stringlist is SETBACKTO, but may contain other things.
 	PLO_LOADSCRIPT				= 197,	// {197}{STRINGLIST type,name,saveToDisk,desKey,crc32} type: weapon/npc/class/gani, saveToDisk: 1/0, desKey: 64-bit key split in two {GINT5}{GINT5}, crc32: {GINT5}
-	PLO_UNKNOWN198				= 198,	// {198}{GINT5 serverOptions}
+	PLO_SERVEROPTIONS			= 198,	// {198}{GINT5 serverOptions}
 	PLO_SET_ENC_KEY             = 252,  // Set AES / RC4 encryption key and init vector
 	PLO_BUNDLE                  = 253   // Bundled packets contain multiple packets
 } ServerToPlayer;
