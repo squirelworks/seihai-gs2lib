@@ -68,7 +68,7 @@ typedef enum PlayerToServer
 	PLI_HITOBJECTS		= 36,
 	PLI_LANGUAGE		= 37,
 	PLI_TRIGGERACTION	= 38,	// {38}{GINT3 fromNPC}{GCHAR xTile}{GCHAR yTile}{STRINGLIST actionAndParams}
-	PLI_MAPINFO			= 39,
+	PLI_TAMPERCHECK		= 39,	// {39}{GINT5 memoryHash1}{GINT5 memoryHash2} - Client makes hashes of certain portions of memory.
 	PLI_SHOOT			= 40,
 	PLI_SERVERWARP		= 41,
 	PLI_MUTEPLAYER		= 43,	// Triggered via playerlist -> mute, looks like {GSHORT playerId}{GBYTE 1/0}
