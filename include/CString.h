@@ -22,24 +22,15 @@
 #ifndef CSTRING_H
 #define CSTRING_H
 
-/* The following line work around this compiling error:
-CSocket.cpp
-In file included from ../../server/include/CString.h:7:0,
-                 from ../../server/include/CLog.h:6,
-                 from ../../server/src/CSocket.cpp:71:
-c:\mingw\bin\../lib/gcc/mingw32/4.6.2/include/c++/cstdio:166:11: erreur: '::snprintf' has not been declared
-*/
-
-#define _WINSOCKAPI_
-#include <cstdlib>
-#include <cstdio>
+#include <algorithm>
+#include <concepts>
 #include <cstdint>
+#include <cstdio>
+#include <cstdlib>
 #include <cstring>
 #include <string>
 #include <string_view>
 #include <vector>
-#include <algorithm>
-#include <concepts>
 
 /*
 #include "bzlib.h"
