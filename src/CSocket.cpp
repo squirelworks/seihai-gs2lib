@@ -224,23 +224,27 @@ bool CSocketManager::registerSocket(CSocketStub* stub)
 
 bool CSocketManager::unregisterSocket(CSocketStub* stub)
 {
-	SOCKET sock = stub->getSocketHandle();
-
-	bool found = false;
-	for (auto & i : stubList)
+	auto eraseSocket = [](auto & list, SOCKET sock) -> bool
 	{
-		CSocketStub* stub = i;
-		if (stub == nullptr) continue;
-
-		SOCKET sock2 = stub->getSocketHandle();
-		if (sock2 == sock)
+		for (auto & i : list)
 		{
-			stub->onUnregister();
-			i = nullptr;
-			found = true;
-			break;
+			CSocketStub* stub = i;
+			if (stub == nullptr) continue;
+
+			SOCKET sock2 = stub->getSocketHandle();
+			if (sock2 == sock)
+			{
+				i = nullptr;
+				stub->onUnregister();
+				return true;
+			}
 		}
-	}
+		return false;
+	};
+
+	SOCKET sock = stub->getSocketHandle();
+	bool found = eraseSocket(stubList, sock);
+	found |= eraseSocket(newStubs, sock);
 
 	return found;
 }
@@ -249,7 +253,7 @@ void CSocketManager::cleanup(bool callOnUnregister)
 {
 	for (auto stub : stubList)
 	{
-			if (stub == nullptr) continue;
+		if (stub == nullptr) continue;
 
 		if (callOnUnregister)
 			stub->onUnregister();
