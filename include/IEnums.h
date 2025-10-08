@@ -73,6 +73,7 @@ typedef enum PlayerToServer
 	PLI_SERVERWARP		= 41,
 	PLI_MUTEPLAYER		= 43,	// Triggered via playerlist -> mute, looks like {GSHORT playerId}{GBYTE 1/0}
 	PLI_PROCESSLIST		= 44,
+	PLI_PROCESSRUNNING	= 45,	// {45}{GCHAR flag} - Response to PLO_ISPROCESSRUNNING, flag is 1 if true.
 	PLI_ENTERLEVEL		= 46,	// {46}{GCHAR 1} - Sent when the player enters a new level
 	PLI_VERIFYWANTSEND	= 47,	// {47}{GINT5:CRC32 Checksum]{GSTRING: Filename} - Check if the file is out of date, and if so send it
 	PLI_SHOOT2			= 48,
@@ -297,11 +298,11 @@ typedef enum ServerToPlayer
 	PLO_SERVERWARP				= 178,
 	PLO_RPGWINDOW				= 179,
 	PLO_STATUSLIST				= 180,
-	PLO_UNKNOWN181				= 181,	// {181}{GSHORT ?}{GCHAR ?} - GCHAR is a toggle
+	PLO_UNKNOWN181				= 181,	// {181}{GSHORT playerId}{GCHAR ?} - GCHAR is a toggle
 	PLO_LISTPROCESSES			= 182,
-	PLO_UNKNOWN183				= 183,	// {183}{GSTRINGLIST text} - onSendHaveWindow
+	PLO_HASPROCESSRUNNING		= 183,	// {183}{GSTRINGLIST text} - onSendHaveWindow - checks if a running process matches the list, client responds with PLI_PROCESSRUNNING.
 	PLO_TAKESCREENSHOT			= 184,	// {184}{STRING filename} - The string "screenshots" is present in the code, it seems to take a screenshot and safe as the filename.
-	PLO_UNKNOWN185				= 185,	// {185}{GCHAR a}{GCHAR b}{GCHAR c}{GCHAR d}{GCHAR e}{GCHAR f}[{GCHAR g}{GCHAR h}...] - a < 200 / b < 204 / e and f might be width/height? g-50, so it might be Z?  Maybe terrain heights?  h * (1/128) + g
+	PLO_BOARDHEIGHTS			= 185,	// {185}{GCHAR mapX}{GCHAR mapY}{GCHAR blockX}{GCHAR blockY}{GCHAR blockWidth}{GCHAR blockHeight}[{GCHAR heightWholePart}{GCHAR heightFractionalPart}...] sends a block of level height overrides. heightWholePart: whole+50, hightFractionalPart: fraction*128
 	PLO_BOARDMODIFY2			= 186,	// {186}{GSHORT x}{GSHORT y}{GCHAR width}{GCHAR height}{tiles}  tiles: {GSHORT tile}
 	PLO_UPDATEPACKAGEISUPDATED	= 187,	// Valid message in 5.07 and 6.037.  The code it uses is unique. -Codr
 	PLO_NC_CLASSDELETE			= 188,	// {188}{class}  Codr note: Unhandled by 5.07+.
