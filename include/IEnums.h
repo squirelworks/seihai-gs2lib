@@ -259,6 +259,7 @@ typedef enum ServerToPlayer
 	PLO_UPDATEPACKAGESIZE		= 105,	// Valid message in 5.07 and 6.037.  The code it uses is unique. -Codr
 	PLO_UPDATEPACKAGEDONE		= 106,	// Valid message in 5.07 and 6.037.  The code it uses is unique. -Codr
 	PLO_BOARDLAYER				= 107,	// Basically PLO_LEVELBOARD for extra level layers.
+	PLO_UNKNOWN108				= 108,
 	PLO_UNKNOWN109				= 109,	// {109}{GINT5 modTime}{GSTRING url} - requests a file over the Internet, used for connector script?
 	PLO_UNKNOWN110				= 110,	// Unhandled.
 	PLO_SETNETCOOKIE			= 111,	// {111}{STR cookie}

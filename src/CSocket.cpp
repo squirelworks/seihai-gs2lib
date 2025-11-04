@@ -21,6 +21,8 @@
 
 #include <thread>
 #include <chrono>
+#include <set>
+#include <utility>
 
 #if defined(_WIN32) || defined(_WIN64)
 
@@ -845,9 +847,29 @@ const char* CSocket::getLocalIp()
 	error = getaddrinfo(host2, 0, &hints, &res);
 	if (error) return 0;
 
-	// Translate into an IP address.
+	// Collect all IP addresses.
+	std::set<std::pair<sockaddr*, size_t>> addresses;
+	addrinfo* cur = res;
+	while (cur != nullptr)
+	{
+		addresses.insert(std::make_pair(cur->ai_addr, cur->ai_addrlen));
+		cur = cur->ai_next;
+	}
+
 	sa = res->ai_addr;
 	salen = res->ai_addrlen;
+
+	// Check if any of the addresses are reserved local IPs.
+	for (auto& [sockaddr, len] : addresses)
+	{
+		if ((unsigned char)sockaddr->sa_data[2] == 192 && (unsigned char)sockaddr->sa_data[3] == 168) // 192.168.x.x
+			sa = sockaddr, salen = len;
+		if ((unsigned char)sockaddr->sa_data[2] == 10) // 10.x.x.x
+			sa = sockaddr, salen = len;
+		// Don't use 172.16.x.x to 172.31.x.x because these are often some sort of virtual bridge or something.
+	}
+
+	// Translate into an IP address.
 	error = getnameinfo(sa, salen, host, 1025, 0, 0, NI_NUMERICHOST);
 	if (error) return 0;
 
