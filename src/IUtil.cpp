@@ -114,6 +114,7 @@ static const char* const clientVersions[] =
 	"G3D18010",		// CLVER_IPHONE_1_5
 	"G3D29090",		// CLVER_IPHONE_1_11
 	"G3D2504D",		// CLVER_IPHONE_BELOTE_1_5
+	"G3D2204D",		// CLVER_WORLDS
 
 	"",				// NSVER_UNKNOWN,
 	"GRNS0000",		// NSVER_GENERIC,
@@ -205,6 +206,7 @@ static const char* const clientVersionString[] =
 	"iPhone 1.5",	// CLVER_IPHONE_1_5
 	"iPhone 1.11",	// CLVER_IPHONE_1_11
 	"iPhone Belote 1.5", //CLVER_IPHONE_BELOTE_1_5
+	"Graal Worlds", // CLVER_WORLDS
 
 	"[NPC-Server]",				// NSVER_UNKNOWN,
 	"[NPC-Server] Generic",		// NSVER_GENERIC,
