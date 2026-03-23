@@ -55,20 +55,7 @@
 #define SOCKET_PROTOCOL_IPV6			2
 
 #if defined(_WIN32) || defined(_WIN64)
-	#ifndef WIN32_LEAN_AND_MEAN
-		#define WIN32_LEAN_AND_MEAN
-	#endif
-
-	#ifndef _WIN32_WINNT
-		#define _WIN32_WINNT 0x0600
-	#endif
-	#include <winsock2.h>
-	#include <ws2tcpip.h>
-	#include <windows.h>
-
-	#undef ERROR
-	#undef TRANSPARENT
-	#undef CALLBACK
+	#include "IWin.h"
 #else
 	#include <netinet/in.h>
  	#include <sys/socket.h>
@@ -78,8 +65,8 @@
 	#define INVALID_SOCKET	(unsigned int)-1
 	typedef unsigned int SOCKET;
 #endif
-#include <vector>
 
+#include <vector>
 
 //! Base class that handles socket functions.
 //! Derive from this class and define the functions.
@@ -151,7 +138,10 @@ class CSocketManager
 struct sock_properties
 {
 	sock_properties() : handle(INVALID_SOCKET), protocol(SOCKET_PROTOCOL_TCP),
-		type(SOCKET_TYPE_CLIENT), state(SOCKET_STATE_DISCONNECTED), reuse(true) {}
+		type(SOCKET_TYPE_CLIENT), state(SOCKET_STATE_DISCONNECTED), reuse(true), address(), addresslen(0)
+	{
+		description[0] = '\0';
+	}
 
 	SOCKET handle;
 	int protocol;

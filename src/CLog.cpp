@@ -24,11 +24,9 @@
 #include <stdarg.h>
 #include <time.h>
 
+
 #ifdef WIN32
-#include <windows.h>
-#ifndef PATH_MAX
-#define PATH_MAX MAX_PATH
-#endif
+#include "IWin.h"
 #endif
 
 #ifndef _WIN32

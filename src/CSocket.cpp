@@ -30,7 +30,7 @@
 	#pragma comment(lib, "ws2_32.lib")
 #endif
 
-	// Some of these might not be valid in Linux, but I don't really care right now.
+#ifndef ENETDOWN
 	#define ENETDOWN			WSAENETDOWN
 	#define EADDRINUSE			WSAEADDRINUSE
 	#define EINTR				WSAEINTR
@@ -52,11 +52,13 @@
 	#define ENOTCONN			WSAENOTCONN
 	#define ENETRESET			WSAENETRESET
 	#define EOPNOTSUPP			WSAEOPNOTSUPP
-	#define ESHUTDOWN			WSAESHUTDOWN
 	#define EMSGSIZE			WSAEMSGSIZE
 	#define ECONNABORTED		WSAECONNABORTED
 	#define ECONNRESET			WSAECONNRESET
 	#define EHOSTUNREACH		WSAEHOSTUNREACH
+#endif
+
+	#define ESHUTDOWN			WSAESHUTDOWN
 	#define SHUT_WR				SD_SEND
 	#define SHUT_RD				SD_RECEIVE
 	#define SHUT_RDWR			SD_BOTH
@@ -781,7 +783,7 @@ int CSocket::setType(int sock_type)
 int CSocket::setDescription(const char *strDescription)
 {
 	memset((void*)&properties.description, 0, SOCKET_MAX_DESCRIPTION);
-	strncpy(properties.description, strDescription, MIN(strlen(strDescription), SOCKET_MAX_DESCRIPTION - 1));
+	strncpy(properties.description, strDescription, std::min(strlen(strDescription), (size_t)SOCKET_MAX_DESCRIPTION - 1));
 	return SOCKET_OK;
 }
 

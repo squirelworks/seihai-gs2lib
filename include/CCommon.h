@@ -21,6 +21,7 @@
 
 #ifndef CCOMMON_H
 #define CCOMMON_H
+
 #include <stdarg.h>
 #include <stdio.h>
 #include <mutex>

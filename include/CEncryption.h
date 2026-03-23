@@ -54,7 +54,7 @@ class CEncryption
 		void limit(int32_t limit);
 		int limitFromType(uint8_t type);
 		void setGen(uint32_t gen)		{ m_gen = gen; if (m_gen > 6) m_gen = 6; }
-		uint32_t getGen()				{ return m_gen; }
+		uint32_t getGen() const			{ return m_gen; }
 
 	private:
 		uint8_t		m_key;

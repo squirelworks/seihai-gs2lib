@@ -30,6 +30,7 @@
 #include <cstring>
 #include <string>
 #include <string_view>
+#include <utility>
 #include <vector>
 
 /*
@@ -37,11 +38,6 @@
 #include "zlib.h"
 */
 
-#ifndef MAX
-	#define MAX(a, b)	((a) > (b) ? (a) : (b))
-	#define MIN(a, b)	((a) < (b) ? (a) : (b))
-#endif
-#define clip(a, b, c) MAX(MIN((a), (c)), (b))
 #define inrange(a, b, c) ((a) >= (b) && (a) <= (c))
 
 #define strtofloat(a) std::strtof(a.text(), nullptr) //atof(a.text())
