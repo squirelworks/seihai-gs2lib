@@ -19,10 +19,20 @@
  * along with GS2Emu. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include <thread>
+#include <algorithm>
 #include <chrono>
+#include <cstdio>
+#include <memory>
 #include <set>
+#include <thread>
+#include <unordered_set>
 #include <utility>
+#include <vector>
+
+#include <string.h>
+
+#include "IWin.h"
+#include "CSocket.h"
 
 #if defined(_WIN32) || defined(_WIN64)
 
@@ -30,38 +40,35 @@
 	#pragma comment(lib, "ws2_32.lib")
 #endif
 
-#ifndef ENETDOWN
-	#define ENETDOWN			WSAENETDOWN
-	#define EADDRINUSE			WSAEADDRINUSE
-	#define EINTR				WSAEINTR
-	#define EINPROGRESS			WSAEINPROGRESS
-	#define EALREADY			WSAEALREADY
-	#define EADDRNOTAVAIL		WSAEADDRNOTAVAIL
-	#define EAFNOSUPPORT		WSAEAFNOSUPPORT
-	#define ECONNREFUSED		WSAECONNREFUSED
-	#define EFAULT				WSAEFAULT
-	#define EINVAL				WSAEINVAL
-	#define EISCONN				WSAEISCONN
-	#define ENETUNREACH			WSAENETUNREACH
-	#define ENOBUFS				WSAENOBUFS
-	#define ENOTSOCK			WSAENOTSOCK
-	#define ETIMEDOUT			WSAETIMEDOUT
-	#define EWOULDBLOCK			WSAEWOULDBLOCK
-	#define EAGAIN				WSAEWOULDBLOCK
-	#define EACCES				WSAEACCES
-	#define ENOTCONN			WSAENOTCONN
-	#define ENETRESET			WSAENETRESET
-	#define EOPNOTSUPP			WSAEOPNOTSUPP
-	#define EMSGSIZE			WSAEMSGSIZE
-	#define ECONNABORTED		WSAECONNABORTED
-	#define ECONNRESET			WSAECONNRESET
-	#define EHOSTUNREACH		WSAEHOSTUNREACH
-#endif
-
-	#define ESHUTDOWN			WSAESHUTDOWN
-	#define SHUT_WR				SD_SEND
-	#define SHUT_RD				SD_RECEIVE
-	#define SHUT_RDWR			SD_BOTH
+	#define SOCK_ENETDOWN			WSAENETDOWN
+	#define SOCK_EADDRINUSE			WSAEADDRINUSE
+	#define SOCK_EINTR				WSAEINTR
+	#define SOCK_EINPROGRESS		WSAEINPROGRESS
+	#define SOCK_EALREADY			WSAEALREADY
+	#define SOCK_EADDRNOTAVAIL		WSAEADDRNOTAVAIL
+	#define SOCK_EAFNOSUPPORT		WSAEAFNOSUPPORT
+	#define SOCK_ECONNREFUSED		WSAECONNREFUSED
+	#define SOCK_EFAULT				WSAEFAULT
+	#define SOCK_EINVAL				WSAEINVAL
+	#define SOCK_EISCONN			WSAEISCONN
+	#define SOCK_ENETUNREACH		WSAENETUNREACH
+	#define SOCK_ENOBUFS			WSAENOBUFS
+	#define SOCK_ENOTSOCK			WSAENOTSOCK
+	#define SOCK_ETIMEDOUT			WSAETIMEDOUT
+	#define SOCK_EWOULDBLOCK		WSAEWOULDBLOCK
+	#define SOCK_EAGAIN				WSAEWOULDBLOCK
+	#define SOCK_EACCES				WSAEACCES
+	#define SOCK_ENOTCONN			WSAENOTCONN
+	#define SOCK_ENETRESET			WSAENETRESET
+	#define SOCK_EOPNOTSUPP			WSAEOPNOTSUPP
+	#define SOCK_EMSGSIZE			WSAEMSGSIZE
+	#define SOCK_ECONNABORTED		WSAECONNABORTED
+	#define SOCK_ECONNRESET			WSAECONNRESET
+	#define SOCK_EHOSTUNREACH		WSAEHOSTUNREACH
+	#define SOCK_ESHUTDOWN			WSAESHUTDOWN
+	#define SOCK_SHUT_WR			SD_SEND
+	#define SOCK_SHUT_RD			SD_RECEIVE
+	#define SOCK_SHUT_RDWR			SD_BOTH
 
 	// The following #define would cause some snprintf linking errors in cstdio with MinGW
 	#if !defined(__GNUC__) && !(defined(_WIN32) || defined(_WIN64))
@@ -75,16 +82,41 @@
 
 	#include <netinet/tcp.h>
 	#define SOCKET_ERROR	-1
+
+	#define SOCK_ENETDOWN			ENETDOWN
+	#define SOCK_EADDRINUSE			EADDRINUSE
+	#define SOCK_EINTR				EINTR
+	#define SOCK_EINPROGRESS		EINPROGRESS
+	#define SOCK_EALREADY			EALREADY
+	#define SOCK_EADDRNOTAVAIL		EADDRNOTAVAIL
+	#define SOCK_EAFNOSUPPORT		EAFNOSUPPORT
+	#define SOCK_ECONNREFUSED		ECONNREFUSED
+	#define SOCK_EFAULT				EFAULT
+	#define SOCK_EINVAL				EINVAL
+	#define SOCK_EISCONN			EISCONN
+	#define SOCK_ENETUNREACH		ENETUNREACH
+	#define SOCK_ENOBUFS			ENOBUFS
+	#define SOCK_ENOTSOCK			ENOTSOCK
+	#define SOCK_ETIMEDOUT			ETIMEDOUT
+	#define SOCK_EWOULDBLOCK		EWOULDBLOCK
+	#define SOCK_EAGAIN				EAGAIN
+	#define SOCK_EACCES				EACCES
+	#define SOCK_ENOTCONN			ENOTCONN
+	#define SOCK_ENETRESET			ENETRESET
+	#define SOCK_EOPNOTSUPP			EOPNOTSUPP
+	#define SOCK_EMSGSIZE			EMSGSIZE
+	#define SOCK_ECONNABORTED		ECONNABORTED
+	#define SOCK_ECONNRESET			ECONNRESET
+	#define SOCK_EHOSTUNREACH		EHOSTUNREACH
+	#define SOCK_SHUT_WR			SHUT_WR
+	#define SOCK_SHUT_RD			SHUT_RD
+	#define SOCK_SHUT_RDWR			SHUT_RDWR
 #endif
 
 // Don't send a signal.  Should only affect Linux.
 #ifndef MSG_NOSIGNAL
 	#define MSG_NOSIGNAL 0
 #endif
-
-#include <memory.h>
-#include <stdio.h>
-#include "CSocket.h"
 
 // Change this to any printf()-like function you use for logging purposes.
 #define SLOG(x, ...)		 if (0) printf(x, ## __VA_ARGS__)
@@ -94,15 +126,10 @@
 static const char* errorMessage(int error);
 static int identifyError(int source = 0);
 
-// From main.cpp
-#include "CLog.h"
-extern CLog serverlog;
-#include "IUtil.h"
-
 bool CSocketManager::update(long sec, long usec)
 {
-	fd_set set_read;
-	fd_set set_write;
+	fd_set set_read{};
+	fd_set set_write{};
 	struct timeval tm{};
 
 	tm.tv_sec = sec;
@@ -112,22 +139,15 @@ bool CSocketManager::update(long sec, long usec)
 
 	// Put all the socket handles into the set.
 	SOCKET max = 0;
-	for (auto i = stubList.begin(); i != stubList.end();)
+	for (auto& stub : stubList)
 	{
-		CSocketStub* stub = *i;
-		if (stub == nullptr)
-		{
-			i = stubList.erase(i);
-			continue;
-		}
-		SOCKET sock = stub->getSocketHandle();
-		if (sock != INVALID_SOCKET)
+		if (stub == nullptr) continue;
+		if (SOCKET sock = stub->getSocketHandle(); sock != INVALID_SOCKET)
 		{
 			if (sock > max) max = sock;
 			if (stub->canRecv()) FD_SET(sock, &set_read);
 			if (stub->canSend()) FD_SET(sock, &set_write);
 		}
-		++i;
 	}
 	fd_max = max;
 
@@ -135,29 +155,24 @@ bool CSocketManager::update(long sec, long usec)
 	select(fd_max + 1, &set_read, &set_write, 0, &tm);
 
 	// Loop through all the socket handles and call relevant functions.
-	for (auto i = stubList.begin(); i != stubList.end();)
+	for (auto& stub : stubList)
 	{
-		CSocketStub* stub = *i;
-		if (stub == nullptr)
-		{
-			++i;
-			continue;
-		}
-
-		SOCKET sock = stub->getSocketHandle();
-		if (sock != INVALID_SOCKET)
+		if (stub == nullptr) continue;
+		if (SOCKET sock = stub->getSocketHandle(); sock != INVALID_SOCKET)
 		{
 			bool success = true;
 			if (success && FD_ISSET(sock, &set_read)) success = stub->onRecv();
 			if (success && FD_ISSET(sock, &set_write)) success = stub->onSend();
-			if (!success && *i != nullptr)
+			if (!success && stub != nullptr)
 			{
 				stub->onUnregister();
-				*i = nullptr;
+				stub = nullptr;
 			}
 		}
-		++i;
 	}
+
+	// Remove all nullptr stubs.
+	stubList.erase(std::remove(stubList.begin(), stubList.end(), nullptr), stubList.end());
 
 	// Add new stubs.
 	if (!newStubs.empty())
@@ -171,11 +186,11 @@ bool CSocketManager::update(long sec, long usec)
 
 bool CSocketManager::updateSingle(CSocketStub* stub, bool pRead, bool pWrite, long sec, long usec)
 {
-	fd_set set_read;
-	fd_set set_write;
+	fd_set set_read{};
+	fd_set set_write{};
 	struct timeval tm{};
 
-	if (stub == 0) return false;
+	if (stub == nullptr) return false;
 
 	tm.tv_sec = sec;
 	tm.tv_usec = usec;
@@ -197,7 +212,8 @@ bool CSocketManager::updateSingle(CSocketStub* stub, bool pRead, bool pWrite, lo
 		if (!stub->onRecv())
 		{
 			stub->onUnregister();
-			vecReplace<CSocketStub*>(stubList, stub, 0);	// Will remove during next call to update().
+			if (auto i = std::find(stubList.begin(), stubList.end(), stub); i != stubList.end())
+				*i = nullptr;
 			return false;
 		}
 	}
@@ -206,7 +222,8 @@ bool CSocketManager::updateSingle(CSocketStub* stub, bool pRead, bool pWrite, lo
 		if (!stub->onSend())
 		{
 			stub->onUnregister();
-			vecReplace<CSocketStub*>(stubList, stub, 0);
+			if (auto i = std::find(stubList.begin(), stubList.end(), stub); i != stubList.end())
+				*i = nullptr;
 			return false;
 		}
 	}
@@ -216,8 +233,8 @@ bool CSocketManager::updateSingle(CSocketStub* stub, bool pRead, bool pWrite, lo
 
 bool CSocketManager::registerSocket(CSocketStub* stub)
 {
-	SOCKET sock = stub->getSocketHandle();
-	if (stub->onRegister())
+	if (stub == nullptr) return false;
+	if (SOCKET sock = stub->getSocketHandle(); stub->onRegister())
 	{
 		if (sock > fd_max) fd_max = sock;
 		newStubs.push_back(stub);
@@ -228,27 +245,37 @@ bool CSocketManager::registerSocket(CSocketStub* stub)
 
 bool CSocketManager::unregisterSocket(CSocketStub* stub)
 {
-	auto eraseSocket = [](auto & list, SOCKET sock) -> bool
-	{
-		for (auto & i : list)
-		{
-			CSocketStub* stub = i;
-			if (stub == nullptr) continue;
+	if (stub == nullptr) return false;
+	static std::unordered_set<CSocketStub*> unregisterSet;
 
-			SOCKET sock2 = stub->getSocketHandle();
-			if (sock2 == sock)
+	// Function to search for sockets that match this handle and add them to the unregister set.
+	// This will also nullptr the stubs in the list so they can be removed later.
+	unregisterSet.clear();
+	auto findSocket = [](std::vector<CSocketStub*>& list, SOCKET sock) -> bool
+	{
+		for (auto& s : list)
+		{
+			if (s == nullptr) continue;
+			if (SOCKET sock2 = s->getSocketHandle(); sock2 == sock)
 			{
-				i = nullptr;
-				stub->onUnregister();
-				return true;
+				unregisterSet.emplace(s);
+				s = nullptr;
 			}
 		}
 		return false;
 	};
 
+	// Search for sockets in both the stub list and the new stub list.
 	SOCKET sock = stub->getSocketHandle();
-	bool found = eraseSocket(stubList, sock);
-	found |= eraseSocket(newStubs, sock);
+	bool found = findSocket(stubList, sock);
+	found |= findSocket(newStubs, sock);
+
+	// Call onUnregister for all the sockets we found.
+	for (auto& s : unregisterSet)
+	{
+		if (s == nullptr) continue;
+		s->onUnregister();
+	}
 
 	return found;
 }
@@ -266,8 +293,7 @@ void CSocketManager::cleanup(bool callOnUnregister)
 	fd_max = 0;
 }
 
-
-
+////////////////////////////////////////////////////////////
 
 int CSocket::was_initiated = 0;
 
@@ -458,10 +484,10 @@ int CSocket::connect()
 void CSocket::disconnect()
 {
 	// Shut down the socket.
-	if (shutdown(properties.handle, SHUT_RDWR) == SOCKET_ERROR)
+	if (shutdown(properties.handle, SOCK_SHUT_RDWR) == SOCKET_ERROR)
 	{
 		int error = identifyError();
-		if (error == ENOTSOCK)
+		if (error == SOCK_ENOTSOCK)
 		{
 			properties.handle = INVALID_SOCKET;
 			properties.state = SOCKET_STATE_DISCONNECTED;
@@ -560,7 +586,7 @@ CSocket* CSocket::accept()
 	if (handle == INVALID_SOCKET)
 	{
 		int error = identifyError();
-		if (error == EWOULDBLOCK || error == EINPROGRESS) return 0;
+		if (error == SOCK_EWOULDBLOCK || error == SOCK_EINPROGRESS) return 0;
 		SLOG("[CSocket::accept] accept() returned error: %s\n", errorMessage(error));
 		return 0;
 	}
@@ -620,19 +646,19 @@ int CSocket::sendData(char* data, unsigned int* dsize)
 		intError = identifyError();
 		switch (intError)
 		{
-			case ENETDOWN:
-			case ENETRESET:
-			case ENOTCONN:
-			case EHOSTUNREACH:
-			case ECONNABORTED:
-			case ECONNRESET:
-			case ETIMEDOUT:
+			case SOCK_ENETDOWN:
+			case SOCK_ENETRESET:
+			case SOCK_ENOTCONN:
+			case SOCK_EHOSTUNREACH:
+			case SOCK_ECONNABORTED:
+			case SOCK_ECONNRESET:
+			case SOCK_ETIMEDOUT:
 				// Destroy the bad socket and create a new one.
 				SLOG("%s - Connection lost!  Reason: %s\n", properties.description, errorMessage(intError));
 				disconnect();
 				return 0;
 				break;
-			case EAGAIN:
+			case SOCK_EAGAIN:
 				return 0;
 				break;
 		}
@@ -679,14 +705,14 @@ char* CSocket::getData(unsigned int* dsize)
 		intError = identifyError();
 		switch (intError)
 		{
-			case ENETDOWN:
-			case ENETRESET:
-			case ENOTCONN:
-			case EHOSTUNREACH:
-			case ECONNABORTED:
-			case ECONNRESET:
-			case ETIMEDOUT:
-			case ESHUTDOWN:
+			case SOCK_ENETDOWN:
+			case SOCK_ENETRESET:
+			case SOCK_ENOTCONN:
+			case SOCK_EHOSTUNREACH:
+			case SOCK_ECONNABORTED:
+			case SOCK_ECONNRESET:
+			case SOCK_ETIMEDOUT:
+			case SOCK_ESHUTDOWN:
 				// Destroy the bad socket and create a new one.
 				SLOG("%s - Connection lost!  Reason: %s\n", properties.description, errorMessage(intError));
 				disconnect();
@@ -698,7 +724,7 @@ char* CSocket::getData(unsigned int* dsize)
 	}
 
 	// If size is 0, the socket was disconnected.
-	if (size == 0 && intError != EWOULDBLOCK)
+	if (size == 0 && intError != SOCK_EWOULDBLOCK)
 		disconnect();
 
 	// Set dsize to how much data was returned.
@@ -739,14 +765,14 @@ char* CSocket::peekData(unsigned int* dsize)
 		intError = identifyError();
 		switch (intError)
 		{
-			case ENETDOWN:
-			case ENETRESET:
-			case ENOTCONN:
-			case EHOSTUNREACH:
-			case ECONNABORTED:
-			case ECONNRESET:
-			case ETIMEDOUT:
-			case ESHUTDOWN:
+			case SOCK_ENETDOWN:
+			case SOCK_ENETRESET:
+			case SOCK_ENOTCONN:
+			case SOCK_EHOSTUNREACH:
+			case SOCK_ECONNABORTED:
+			case SOCK_ECONNRESET:
+			case SOCK_ETIMEDOUT:
+			case SOCK_ESHUTDOWN:
 				// Destroy the bad socket and create a new one.
 				SLOG("%s - Connection lost!  Reason: %s\n", properties.description, errorMessage(intError));
 				disconnect();
@@ -801,7 +827,7 @@ int CSocket::setState(int iState)
 	return SOCKET_OK;
 }
 
-const char* CSocket::getRemoteIp()
+const char* CSocket::getRemoteIp() const
 {
 	char* hostret;
 	static char host[1025];
@@ -814,7 +840,7 @@ const char* CSocket::getRemoteIp()
 	return hostret;
 }
 
-const char* CSocket::getRemotePort()
+const char* CSocket::getRemotePort() const
 {
 	char* portret;
 	static char port[32];
@@ -827,7 +853,7 @@ const char* CSocket::getRemotePort()
 	return portret;
 }
 
-const char* CSocket::getLocalIp()
+const char* CSocket::getLocalIp() const
 {
 	char* hostret;
 	static char host[1025];
@@ -928,7 +954,7 @@ void CSocket::socketSystemDestroy()
 const char* errorMessage(int error)
 {
 	// These can happen a lot.  Don't display any errors about them.
-	if (error == EWOULDBLOCK || error == EINPROGRESS)
+	if (error == SOCK_EWOULDBLOCK || error == SOCK_EINPROGRESS)
 		return 0;
 
 	switch (error)
@@ -937,55 +963,55 @@ const char* errorMessage(int error)
 		case WSANOTINITIALISED:
 			return "WSANOTINITIALISED"; break;
 #endif
-		case ENETDOWN:
+		case SOCK_ENETDOWN:
 			return "ENETDOWN"; break;
-		case EADDRINUSE:
+		case SOCK_EADDRINUSE:
 			return "EADDRINUSE"; break;
-		case EINTR:
+		case SOCK_EINTR:
 			return "EINTR"; break;
-		case EINPROGRESS:
+		case SOCK_EINPROGRESS:
 			return "EINPROGRESS"; break;
-		case EALREADY:
+		case SOCK_EALREADY:
 			return "EALREADY"; break;
-		case EADDRNOTAVAIL:
+		case SOCK_EADDRNOTAVAIL:
 			return "EADDRNOTAVAIL"; break;
-		case EAFNOSUPPORT:
+		case SOCK_EAFNOSUPPORT:
 			return "EAFNOSUPPORT"; break;
-		case ECONNREFUSED:
+		case SOCK_ECONNREFUSED:
 			return "ECONNREFUSED"; break;
-		case EFAULT:
+		case SOCK_EFAULT:
 			return "EFAULT"; break;
-		case EINVAL:
+		case SOCK_EINVAL:
 			return "EINVAL"; break;
-		case EISCONN:
+		case SOCK_EISCONN:
 			return "EISCONN"; break;
-		case ENETUNREACH:
+		case SOCK_ENETUNREACH:
 			return "ENETUNREACH"; break;
-		case ENOBUFS:
+		case SOCK_ENOBUFS:
 			return "ENOBUFS"; break;
-		case ENOTSOCK:
+		case SOCK_ENOTSOCK:
 			return "ENOTSOCK"; break;
-		case ETIMEDOUT:
+		case SOCK_ETIMEDOUT:
 			return "ETIMEDOUT"; break;
-		case EWOULDBLOCK:
+		case SOCK_EWOULDBLOCK:
 			return "EWOULDBLOCK"; break;
-		case EACCES:
+		case SOCK_EACCES:
 			return "EACCES"; break;
-		case ENOTCONN:
+		case SOCK_ENOTCONN:
 			return "ENOTCONN"; break;
-		case ENETRESET:
+		case SOCK_ENETRESET:
 			return "ENETRESET"; break;
-		case EOPNOTSUPP:
+		case SOCK_EOPNOTSUPP:
 			return "EOPNOTSUPP"; break;
-		case ESHUTDOWN:
+		case SOCK_ESHUTDOWN:
 			return "ESHUTDOWN"; break;
-		case EMSGSIZE:
+		case SOCK_EMSGSIZE:
 			return "EMSGSIZE"; break;
-		case ECONNABORTED:
+		case SOCK_ECONNABORTED:
 			return "ECONNABORTED"; break;
-		case ECONNRESET:
+		case SOCK_ECONNRESET:
 			return "ECONNRESET"; break;
-		case EHOSTUNREACH:
+		case SOCK_EHOSTUNREACH:
 			return "EHOSTUNREACH"; break;
 		default:
 		{
