@@ -384,6 +384,8 @@ int CSocket::init(const char* host, const char* port, int protocol)
 		properties.addresslen = res->ai_addrlen;
 	}
 
+	freeaddrinfo(res);
+
 	return SOCKET_OK;
 }
 
