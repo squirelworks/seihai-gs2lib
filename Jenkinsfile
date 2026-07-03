@@ -108,8 +108,29 @@ node('master') {
     def fixed_job_name = split_job_name[1].replace('%2F',' ');
     checkout(scm);
 
-    withCredentials([usernamePassword(credentialsId: 'githubgraal2', passwordVariable: 'GIT_PASSWORD', usernameVariable: 'GIT_USERNAME')]) {
-        sh("git push --force https://${GIT_USERNAME}:${GIT_PASSWORD}@bitbucket.org/xtjoeytx/gs2lib.git HEAD:refs/heads/${fixed_job_name}");
+    withCredentials([
+        sshUserPrivateKey(
+            credentialsId: 'PREAGONAL_BITBUCKET_SSH_KEY',
+            keyFileVariable: 'BITBUCKET_SSH_KEY'
+        )
+    ]) {
+        withEnv(["BRANCHNAME=${env.BRANCH_NAME}"]) {
+            sh '''
+                set -e
+
+                mkdir -p "$WORKSPACE/.ssh"
+                chmod 700 "$WORKSPACE/.ssh"
+
+                ssh-keyscan ssh.bitbucket.org > "$WORKSPACE/.ssh/known_hosts"
+                chmod 644 "$WORKSPACE/.ssh/known_hosts"
+
+                export GIT_SSH_COMMAND="ssh -i $BITBUCKET_SSH_KEY -o IdentitiesOnly=yes -o UserKnownHostsFile=$WORKSPACE/.ssh/known_hosts"
+
+                git push --force \
+                  git@ssh.bitbucket.org:xtjoeytx/gs2lib.git \
+                  "HEAD:refs/heads/${BRANCHNAME}"
+            '''
+        }
     }
 
     env.COMMIT_MSG = sh(
