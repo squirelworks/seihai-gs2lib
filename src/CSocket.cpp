@@ -887,6 +887,7 @@ const char* CSocket::getLocalIp()
 
 	// Translate into an IP address.
 	error = getnameinfo(sa, salen, host, 1025, nullptr, 0, NI_NUMERICHOST);
+	freeaddrinfo(res);
 	if (error) return nullptr;
 
 	char *hostret = host;
