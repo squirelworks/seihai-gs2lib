@@ -50,7 +50,9 @@ def buildStep(dockerImage, generator, os, defines, triplet) {
             properties([pipelineTriggers([githubPush()])]);
             def commondir = env.WORKSPACE + '/../' + fixed_job_name + '/';
 
-            docker.image("${dockerImage}").inside("") {
+            def customImage = docker.image("${dockerImage}");
+            customImage.pull();
+            customImage.inside("") {
                 checkout(scm);
 
                 if (env.CHANGE_ID) {

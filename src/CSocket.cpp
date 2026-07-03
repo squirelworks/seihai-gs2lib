@@ -825,11 +825,10 @@ const char* CSocket::getRemoteIp() const
 	memset((void*)host, 0, 1025);
 
 	// Grab the IP address.
-	int error = getnameinfo((struct sockaddr*)&properties.address, sizeof(struct sockaddr_storage), host, 1025, nullptr, 0, NI_NUMERICHOST);
-	if (error) return nullptr;
+	if (getnameinfo(reinterpret_cast<const struct sockaddr *>(&properties.address), sizeof(struct sockaddr_storage), host, 1025, nullptr, 0, NI_NUMERICHOST))
+		return nullptr;
 
-	char *hostret = host;
-	return hostret;
+	return &host[0];
 }
 
 const char* CSocket::getRemotePort() const
@@ -838,11 +837,10 @@ const char* CSocket::getRemotePort() const
 	memset((void*)port, 0, 32);
 
 	// Grab the IP address.
-	int error = getnameinfo((struct sockaddr*)&properties.address, sizeof(struct sockaddr_storage), nullptr, 0, port, 32, NI_NUMERICSERV);
-	if (error) return nullptr;
+	if (getnameinfo(reinterpret_cast<const struct sockaddr*>(&properties.address), sizeof(struct sockaddr_storage), nullptr, 0, port, 32, NI_NUMERICSERV))
+		return nullptr;
 
-	char *portret = port;
-	return portret;
+	return &port[0];
 }
 
 const char* CSocket::getLocalIp()
@@ -878,9 +876,9 @@ const char* CSocket::getLocalIp()
 	// Check if any of the addresses are reserved local IPs.
 	for (auto& [sockaddr, len] : addresses)
 	{
-		if ((unsigned char)sockaddr->sa_data[2] == 192 && (unsigned char)sockaddr->sa_data[3] == 168) // 192.168.x.x
+		if (static_cast<unsigned char>(sockaddr->sa_data[2]) == 192 && static_cast<unsigned char>(sockaddr->sa_data[3]) == 168) // 192.168.x.x
 			sa = sockaddr, salen = len;
-		if ((unsigned char)sockaddr->sa_data[2] == 10) // 10.x.x.x
+		if (static_cast<unsigned char>(sockaddr->sa_data[2]) == 10) // 10.x.x.x
 			sa = sockaddr, salen = len;
 		// Don't use 172.16.x.x to 172.31.x.x because these are often some sort of virtual bridge or something.
 	}
