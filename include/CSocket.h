@@ -57,13 +57,10 @@
 #if defined(_WIN32) || defined(_WIN64)
 #include "IWin.h"
 #else
-#include <netinet/in.h>
 #include <sys/socket.h>
-#include <sys/types.h>
-#include <arpa/inet.h>
 
-#define INVALID_SOCKET	(unsigned int)-1
-typedef unsigned int SOCKET;
+#define INVALID_SOCKET	((int)-1)
+typedef int SOCKET;
 #endif
 
 #include <vector>
@@ -74,7 +71,7 @@ typedef unsigned int SOCKET;
 class CSocketStub
 {
 public:
-	virtual ~CSocketStub() {}
+	virtual ~CSocketStub() = default;
 
 public:
 	virtual bool onSend() = 0;
@@ -122,7 +119,7 @@ public:
 	bool unregisterSocket(CSocketStub* stub);
 
 	//! Removes all socket stubs.
-	//! \param callUnregister If true, calls onUnregister() for all the stubs.
+	//! \param callOnUnregister If true, calls onUnregister() for all the stubs.
 	void cleanup(bool callOnUnregister = true);
 
 private:
@@ -149,7 +146,7 @@ struct sock_properties
 	int state;
 	/* If we should use SO_REUSEADDR */
 	bool reuse;
-	char description[SOCKET_MAX_DESCRIPTION];
+	char description[SOCKET_MAX_DESCRIPTION]{};
 	sockaddr_storage address;
 	size_t addresslen;
 };
@@ -168,7 +165,7 @@ private:
 public:
 	//! Constructors-Destructors.
 	CSocket();
-	CSocket(const char* host, const char* port, sock_properties* properties = 0);
+	CSocket(const char* host, const char* port, const sock_properties* properties = nullptr);
 	~CSocket();
 
 	//! Initializes a socket (does not connect to it.)
@@ -202,7 +199,7 @@ public:
 	//! \return SOCKET_CONNECT_ERROR if it fails to reconnect the socket.
 	int reconnect(long delay = 0, int tries = 1);
 
-	//! Accepts a new socket of this socket was connect as a server type.
+	//! Accepts a new socket of this socket was connected as a server type.
 	//! \return A new socket, else a null pointer if it failed.
 	CSocket* accept();
 
@@ -210,7 +207,7 @@ public:
 	//! \param data The data to send.
 	//! \param dsize The amount of data to send.  Will get changed to how much data is left to be sent (in case not everything was sent.)
 	//! \return How much data was sent.
-	int sendData(char* data, unsigned int* dsize);
+	int sendData(const char* data, unsigned int* dsize);
 
 	//! Gets data from the socket.
 	//! \param dsize Is set to how much data was returned from the socket.
@@ -284,7 +281,7 @@ public:
 		Linux beware.  It will return the IP address in /etc/hosts that corresponds
 		to the hostname in /etc/hostname. */
 	//! \return The IP address.
-	const char* getLocalIp() const;
+	static const char* getLocalIp() ;
 
 	//! Destroys the socket subsystems.
 	/*! Windows specific. */
