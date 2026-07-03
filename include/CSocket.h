@@ -58,6 +58,7 @@
 #include "IWin.h"
 #else
 #include <sys/socket.h>
+#include <arpa/inet.h>
 
 #define INVALID_SOCKET	((int)-1)
 typedef int SOCKET;
