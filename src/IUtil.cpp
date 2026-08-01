@@ -447,9 +447,9 @@ int webSocketFixIncomingPacket( CString& packetData ) {
 	int index_first_data_byte = 0;
 
 	auto bytes = packetData.text();
-	volatile auto code = bytes[0];
-	volatile auto is_fin = (code & 0xFF) >> WS_FIN_SHIFT;
-	volatile auto opcode = (code & 0x0F);
+	const volatile auto code = static_cast<unsigned char>(bytes[0]);
+	const volatile auto is_fin = (code & 0xFF) >> WS_FIN_SHIFT;
+	const volatile auto opcode = (code & 0x0F);
 
 	if( opcode != WS_FR_OP_BIN ) {
 		//dst = NULL;
