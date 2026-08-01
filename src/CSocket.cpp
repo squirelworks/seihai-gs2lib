@@ -23,7 +23,6 @@
 #include <chrono>
 #include <cstdio>
 #include <memory>
-#include <set>
 #include <thread>
 #include <unordered_set>
 #include <utility>
@@ -35,9 +34,11 @@
 
 #if defined(_WIN32) || defined(_WIN64)
 	#include "IWin.h"
+	#include <iphlpapi.h>
 
 #ifndef __GNUC__ // rain
 	#pragma comment(lib, "ws2_32.lib")
+	#pragma comment(lib, "iphlpapi.lib")
 #endif
 
 	#define SOCK_ENETDOWN			WSAENETDOWN
@@ -80,9 +81,13 @@
 	#include <unistd.h>
 	#include <fcntl.h>
 
+	#include <ifaddrs.h>
+	#include <arpa/inet.h>
+	#include <net/if.h>
 	#include <netinet/in.h>
 	#include <netinet/tcp.h>
 	#include <sys/types.h>
+	#include <sys/socket.h>
 
 	#define SOCKET_ERROR	(-1)
 
@@ -127,7 +132,7 @@
 //////
 
 // Function declarations.
-const char* errorMessage(int error);
+static const char* errorMessage(int error);
 static int identifyError();
 
 bool CSocketManager::update(const long sec, const long usec)
@@ -843,53 +848,101 @@ const char* CSocket::getRemotePort() const
 	return &port[0];
 }
 
+static bool isPrivateIpv4(const uint32_t host)
+{
+    const uint8_t a = (host >> 24) & 0xFF;
+    const uint8_t b = (host >> 16) & 0xFF;
+    if (a == 10) return true;                        // 10.0.0.0/8
+    if (a == 172 && b >= 16 && b <= 31) return true; // 172.16.0.0/12
+    if (a == 192 && b == 168) return true;           // 192.168.0.0/16
+    return false;
+}
+
+static bool isLoopbackIpv4(const uint32_t host)
+{
+    return ((host >> 24) & 0xFF) == 127;  // 127.0.0.0/8
+}
+
+static std::vector<std::string> getPrivateLanIpv4s() {
+    std::vector<std::string> out;
+
+#ifdef _WIN32
+    ULONG flags = GAA_FLAG_SKIP_ANYCAST | GAA_FLAG_SKIP_MULTICAST | GAA_FLAG_SKIP_DNS_SERVER;
+    ULONG family = AF_INET;
+    ULONG bufLen = 15 * 1024;
+    std::vector<unsigned char> buf(bufLen);
+
+    auto addrs = reinterpret_cast<IP_ADAPTER_ADDRESSES*>(buf.data());
+    auto rc = GetAdaptersAddresses(family, flags, nullptr, addrs, &bufLen);
+    if (rc == ERROR_BUFFER_OVERFLOW)
+    {
+        buf.resize(bufLen);
+        addrs = reinterpret_cast<IP_ADAPTER_ADDRESSES*>(buf.data());
+        rc = GetAdaptersAddresses(family, flags, nullptr, addrs, &bufLen);
+    }
+
+    if (rc == NO_ERROR)
+    {
+        for (auto* a = addrs; a; a = a->Next)
+        {
+            if (a->OperStatus != IfOperStatusUp) continue;
+            if (a->IfType == IF_TYPE_SOFTWARE_LOOPBACK) continue;
+
+            for (auto* u = a->FirstUnicastAddress; u; u = u->Next)
+            {
+                if (!u->Address.lpSockaddr || u->Address.lpSockaddr->sa_family != AF_INET)
+                	continue;
+
+                auto* sin = reinterpret_cast<sockaddr_in*>(u->Address.lpSockaddr);
+                uint32_t host = ntohl(sin->sin_addr.s_addr);
+                if (isLoopbackIpv4(host) || !isPrivateIpv4(host))
+                	continue;
+
+                char s[INET_ADDRSTRLEN]{};
+                inet_ntop(AF_INET, &sin->sin_addr, s, sizeof(s));
+                out.emplace_back(s);
+            }
+        }
+    }
+#else
+    ifaddrs* ifaddr = nullptr;
+    if (getifaddrs(&ifaddr) != 0)
+    	return out;
+
+    for (const ifaddrs* ifa = ifaddr; ifa; ifa = ifa->ifa_next)
+    {
+        if (!ifa->ifa_addr) continue;
+        if (ifa->ifa_addr->sa_family != AF_INET) continue;
+        if (!(ifa->ifa_flags & IFF_UP)) continue;
+        if (ifa->ifa_flags & IFF_LOOPBACK) continue;
+
+        const auto* sin = reinterpret_cast<const sockaddr_in*>(ifa->ifa_addr);
+        uint32_t host = ntohl(sin->sin_addr.s_addr);
+        if (isLoopbackIpv4(host) || !isPrivateIpv4(host))
+        	continue;
+
+        char s[INET_ADDRSTRLEN]{};
+        inet_ntop(AF_INET, &sin->sin_addr, s, sizeof(s));
+        out.emplace_back(s);
+    }
+
+    freeifaddrs(ifaddr);
+#endif
+
+    return out;
+}
+
 const char* CSocket::getLocalIp()
 {
-	static char host[1025];
-	char host2[1025];
+	static char host[1025] = {};
 
-	struct addrinfo hints{};
-	struct addrinfo *res;
-
-	// Get the local host name.
-	int error = gethostname(host2, sizeof(host2));
-	if (error) return nullptr;
-
-	// Get a sockaddr for the local host.
-	memset(&hints, 0, sizeof(hints));
-	hints.ai_family = PF_INET;
-	error = getaddrinfo(host2, nullptr, &hints, &res);
-	if (error) return nullptr;
-
-	// Collect all IP addresses.
-	std::set<std::pair<sockaddr*, size_t>> addresses;
-	addrinfo* cur = res;
-	while (cur != nullptr)
+	if (const auto ips = getPrivateLanIpv4s(); !ips.empty())
 	{
-		addresses.insert(std::make_pair(cur->ai_addr, cur->ai_addrlen));
-		cur = cur->ai_next;
+		strncpy(host, ips[0].c_str(), sizeof(host) - 1);
+		host[sizeof(host) - 1] = '\0';
 	}
 
-	const struct sockaddr *sa = res->ai_addr;
-	unsigned int salen = res->ai_addrlen;
-
-	// Check if any of the addresses are reserved local IPs.
-	for (auto& [sockaddr, len] : addresses)
-	{
-		if (static_cast<unsigned char>(sockaddr->sa_data[2]) == 192 && static_cast<unsigned char>(sockaddr->sa_data[3]) == 168) // 192.168.x.x
-			sa = sockaddr, salen = len;
-		if (static_cast<unsigned char>(sockaddr->sa_data[2]) == 10) // 10.x.x.x
-			sa = sockaddr, salen = len;
-		// Don't use 172.16.x.x to 172.31.x.x because these are often some sort of virtual bridge or something.
-	}
-
-	// Translate into an IP address.
-	error = getnameinfo(sa, salen, host, 1025, nullptr, 0, NI_NUMERICHOST);
-	freeaddrinfo(res);
-	if (error) return nullptr;
-
-	char *hostret = host;
-	return hostret;
+	return host;
 }
 
 int CSocket::socketSystemInit()

@@ -278,9 +278,6 @@ public:
 	const char* getRemotePort() const;
 
 	//! Gets the IP address of the current device.
-	/*! Gets the IP address of the current device.
-		Linux beware.  It will return the IP address in /etc/hosts that corresponds
-		to the hostname in /etc/hostname. */
 	//! \return The IP address.
 	static const char* getLocalIp() ;
 
