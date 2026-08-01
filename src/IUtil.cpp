@@ -44,10 +44,10 @@ static const char* colors[] =
 	"gray",
 	"black",
 	"transparent",
-	0
+	nullptr
 };
 
-static const char* const clientVersions[] =
+static constexpr const char* const clientVersions[] =
 {
 	"",				// CLVER_UNKNOWN,
 	"",				// CLVER_NPCSERVER,
@@ -122,27 +122,27 @@ static const char* const clientVersions[] =
 	"",				// NSVER_UNKNOWN,
 	"GRNS0000",		// NSVER_GENERIC,
 	"LNX00001",		// NSVER_LNXMAD,
-	0
+	nullptr
 };
 
-static const char* const ncVersions[] =
+static constexpr const char* const ncVersions[] =
 {
 	"",				// NCVER_UNKNOWN,
 	"NCL11012",		// NCVER_1_1,
 	"NCL21075",		// NCVER_2_1,
-	0
+	nullptr
 };
 
-static const char* const rcVersions[] =
+static constexpr const char* const rcVersions[] =
 {
 	"",				// RCVER_UNKNOWN,
 	"GSERV023",		// RCVER_1_010,
 	"GSERV024",		// RCVER_1_1,
 	"GSERV025",		// RCVER_2,
-	0
+	nullptr
 };
 
-static const char* const clientVersionString[] =
+static constexpr const char* const clientVersionString[] =
 {
 	"",			// CLVER_UNKNOWN,
 	"(npcserver)",	// CLVER_NPCSERVER,
@@ -217,30 +217,30 @@ static const char* const clientVersionString[] =
 	"[NPC-Server]",				// NSVER_UNKNOWN,
 	"[NPC-Server] Generic",		// NSVER_GENERIC,
 	"[NPC-Server] lnxmad",		// NSVER_LNXMAD,
-	0
+	nullptr
 };
 
-static const char* const ncVersionString[] =
+static constexpr const char* const ncVersionString[] =
 {
 	"",			// NCVER_UNKNOWN,
 	"1.1",		// NCVER_1_1,
 	"2.1",		// NCVER_2_1,
-	0
+	nullptr
 };
 
-static const char* const rcVersionString[] =
+static constexpr const char* const rcVersionString[] =
 {
 	"",			// RCVER_UNKNOWN,
 	"1.010",	// RCVER_1_010,
 	"1.1",		// RCVER_1_1,
 	"2.0",		// RCVER_2,
-	0
+	nullptr
 };
 
 int getVersionID(const CString& version)
 {
 	int i = 0;
-	while (clientVersions[i] != 0)
+	while (clientVersions[i] != nullptr)
 	{
 		if (version == CString(clientVersions[i]))
 			return i;
@@ -252,9 +252,9 @@ int getVersionID(const CString& version)
 const char* getVersionString(const CString& version, const int type)
 {
 	int i = 0;
-	while (clientVersions[i] != 0)
+	while (clientVersions[i] != nullptr)
 	{
-		if ((type & PLTYPE_ANYCLIENT) != 0)
+		if ((type & PLTYPE_ANYCLIENT) != 0 || (type & PLTYPE_NPCSERVER) != 0)
 		{
 			if (version == CString(clientVersions[i]))
 				return clientVersionString[i];
@@ -269,20 +269,15 @@ const char* getVersionString(const CString& version, const int type)
 			if (version == CString(ncVersions[i]))
 				return ncVersionString[i];
 		}
-		else if ((type & PLTYPE_NPCSERVER) != 0)
-		{
-			if (version == CString(clientVersions[i]))
-				return clientVersionString[i];
-		}
 		++i;
 	}
-	return 0;
+	return nullptr;
 }
 
 int getNCVersionID(const CString& version)
 {
 	int i = 0;
-	while (ncVersions[i] != 0)
+	while (ncVersions[i] != nullptr)
 	{
 		if (version == CString(ncVersions[i]))
 			return i;
@@ -294,7 +289,7 @@ int getNCVersionID(const CString& version)
 int getRCVersionID(const CString& version)
 {
 	int i = 0;
-	while (rcVersions[i] != 0)
+	while (rcVersions[i] != nullptr)
 	{
 		if (version == CString(rcVersions[i]))
 			return i;
@@ -305,8 +300,8 @@ int getRCVersionID(const CString& version)
 
 signed char getColor(const CString& color)
 {
-	int i = 0;
-	while (colors[i] != 0)
+	signed char i = 0;
+	while (colors[i] != nullptr)
 	{
 		if (color.comparei(CString(colors[i])))
 			return i;
@@ -349,7 +344,7 @@ CString removeComments(const CString& code, const CString& newLine)
 
 CString removeExtension(const CString& file)
 {
-	int ePos = file.findl('.');
+	const int ePos = file.findl('.');
 	if (ePos == -1) return file;
 
 	return file.subString(0, ePos);
@@ -466,7 +461,6 @@ int webSocketFixIncomingPacket( CString& packetData ) {
 		printf("packetData: %d\n", opcode);
 		return -1;
 	}
-
 
 	length_code = bytes[1] & 127;
 
