@@ -34,8 +34,6 @@
 
 #if defined(_WIN32) || defined(_WIN64)
 	#include "IWin.h"
-	#include <iphlpapi.h>
-	#include <ws2tcpip.h>
 
 #ifndef __GNUC__ // rain
 	#pragma comment(lib, "ws2_32.lib")

@@ -24,10 +24,13 @@
 
 #include <winsock2.h>
 #include <windows.h>
+#include <iphlpapi.h>
+#include <ws2tcpip.h>
 
 #undef ERROR
 #undef TRANSPARENT
 #undef CALLBACK
+#undef THIS
 
 #endif
 
