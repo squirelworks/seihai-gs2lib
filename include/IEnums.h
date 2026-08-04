@@ -287,15 +287,15 @@ typedef enum ServerToPlayer
 	PLO_SHOWIMGNPC				= 166,	// {166}{GINT3 npcId}{GCHAR index}{props} - index: val-42 (something special happens on index 9), props: {GCHAR prop} - 0: {GSTRING image}, 1: {GCHAR fX}, 2: {GCHAR fY}, 3: {GCHAR layer}, 4: {GSHORT imgPartX}{GSHORT y}{GCHAR width}{GCHAR height}, 5: {GCHAR particle ?}{GCHAR ?}{GCHAR ?}{GCHAR ?}, 6: {GCHAR particle ?}, 7: {GCHAR z? angle? -82, then double()}, 8: {GCHAR particle ? max 3}
 	PLO_NC_WEAPONLISTGET		= 167,	// {167}{CHAR name1 length}{name1}{CHAR name2 length}{name2}...  Codr note: Unhandled by 5.07+.
 	PLO_UNKNOWN168				= 168,	// {168} - Login server sends this.
-	PLO_UNKNOWN169				= 169,	// Valid message in 5.07.  It's strange... the parameter seems to be a direct pointer value which would be difficult for the server to know about unless the client actually sends that information.  I don't know what purpose that could serve, however.  Unhandled by 6.037. -Codr
+	PLO_UPGRADEURL				= 169,	// When sent along with PLO_DISCONNECT, the reconnect button changes to "Upgrade" and it opens the URL when clicked.
 	PLO_GHOSTMODE				= 170,
 	PLO_BIGMAP					= 171,	// Unhandled by 6.037. -Codr
 	PLO_MINIMAP					= 172,	// {172}{STR mapString} - zodiacminimap.txt,zodiacworldminimap3.png,10,10
 	PLO_GHOSTTEXT				= 173,	// {173}{text}  Shows static text in lower-right corner of screen only when in ghost mode.
 	PLO_GHOSTICON				= 174,	// Pass 1 to enable the ghost icon
 	PLO_SHOOT					= 175,	// Unhandled by 6.037. -Codr
-	PLO_DISABLECLASSICMODE		= 176,	// {176} - g2k2server = true?  Seems to turn off all old mechanics.  Most likely used by Kingdoms and other fully scripted servers.
-	PLO_FULLSTOP2				= 177,	// Sending this causes the entire client to not respond to normal input and it hides the HUD.  Codr note: Unhandled by 5.07+.
+	PLO_KINGDOMSMODE			= 176,	// Switches the client to Kingdoms mode.
+	PLO_NEWWORLDMODE			= 177,	// Switches the client to New World mode.
 	PLO_SERVERWARP				= 178,
 	PLO_RPGWINDOW				= 179,
 	PLO_STATUSLIST				= 180,
