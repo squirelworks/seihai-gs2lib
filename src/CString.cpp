@@ -874,7 +874,7 @@ CString CString::zcompress(unsigned int buffSize) const
 
 // This function is used to decompress data using the DEFLATE algorithm (RFC 1951) without zlib headers or trailers.
 // This is useful to work around a 2.x client bug with its ancient version of zlib.
-static int deflate_rfc1951(Bytef *dest, uLongf *destLen, const Bytef *source, uLong sourceLen)
+static int deflate_rfc1951(Bytef *dest, uLongf *destLen, const Bytef *source, const uLong sourceLen)
 {
 	// Derived from uncompress2_z
 
@@ -944,11 +944,14 @@ CString CString::zuncompress2(bool& usedDeflate, const unsigned int buffSize) co
 	if ((error = uncompress(reinterpret_cast<Bytef *>(buf), &clen, reinterpret_cast<const Bytef *>(buffer), length())) != Z_OK)
 	{
 		// Try DEFLATE directly.
+		// This is a workaround for a 2.x client bug with its ancient version of zlib.
+		// For some reason, the 2.x client generates an invalid Adler-32 checksum in certain situations.
 		if (error == Z_DATA_ERROR)
 		{
+			// Strip off the header and trailer bytes (first 2 bytes and last 4 bytes) and try again.
 			const auto source = reinterpret_cast<const Bytef*>(buffer) + 2;
+			clen = buffSize - 6;
 			buf[0] = '\0';
-			clen = buffSize;
 			error = deflate_rfc1951(reinterpret_cast<Bytef *>(buf), &clen, source, length() - 2);
 			if (error == Z_OK)
 				usedDeflate = true;
