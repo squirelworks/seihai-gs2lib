@@ -946,7 +946,7 @@ CString CString::zuncompress2(bool& usedDeflate, const unsigned int buffSize) co
 		// Try DEFLATE directly.
 		// This is a workaround for a 2.x client bug with its ancient version of zlib.
 		// For some reason, the 2.x client generates an invalid Adler-32 checksum in certain situations.
-		if (error == Z_DATA_ERROR)
+		if (error == Z_DATA_ERROR && buffSize > 6)
 		{
 			// Strip off the header and trailer bytes (first 2 bytes and last 4 bytes) and try again.
 			const auto source = reinterpret_cast<const Bytef*>(buffer) + 2;
