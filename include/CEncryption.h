@@ -53,14 +53,19 @@ class CEncryption
 		CString encrypt(CString pBuf);
 		void limit(int32_t limit);
 		int limitFromType(uint8_t type);
-		void setGen(uint32_t gen)		{ m_gen = gen; if (m_gen > 6) m_gen = 6; }
-		uint32_t getGen() const			{ return m_gen; }
+		void setGen(const uint32_t gen)			{ m_gen = gen; if (m_gen > 6) m_gen = 6; }
+		[[nodiscard]] uint32_t getGen() const	{ return m_gen; }
+
+		// When 2.x clients send a broken zlib packet, we need to rollback the iterator one value so the next packet is decrypted properly.
+		// For some reason, the client falls 1 iteration behind.
+		void rollbackIterator()			{ m_iterator = m_lastIterator; }
 
 	private:
 		uint8_t		m_key;
 		uint32_t	m_iterator;
 		int32_t		m_limit;
 		uint32_t	m_gen;
+		uint32_t	m_lastIterator;
 };
 
 #endif

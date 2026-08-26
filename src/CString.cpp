@@ -872,15 +872,89 @@ CString CString::zcompress(unsigned int buffSize) const
 	return retVal;
 }
 
-CString CString::zuncompress(unsigned int buffSize) const
+// This function is used to decompress data using the DEFLATE algorithm (RFC 1951) without zlib headers or trailers.
+// This is useful to work around a 2.x client bug with its ancient version of zlib.
+static int deflate_rfc1951(Bytef *dest, uLongf *destLen, const Bytef *source, uLong sourceLen)
+{
+	// Derived from uncompress2_z
+
+	z_stream stream;
+	constexpr uInt max = static_cast<uInt>(-1);
+
+	if ((sourceLen > 0 && source == nullptr) || destLen == nullptr || (*destLen > 0 && dest == nullptr))
+		return Z_STREAM_ERROR;
+
+	z_size_t len = sourceLen;
+	z_size_t left = *destLen;
+	if (left == 0 && dest == Z_NULL)
+		dest = reinterpret_cast<Bytef*>(&stream.reserved);       /* next_out cannot be NULL */
+
+	stream.next_in = const_cast<Bytef*>(source);
+	stream.avail_in = 0;
+	stream.zalloc = static_cast<alloc_func>(nullptr);
+	stream.zfree = static_cast<free_func>(nullptr);
+	stream.opaque = static_cast<voidpf>(nullptr);
+
+	// -15 is the windowBits parameter for raw deflate (no zlib header or trailer)
+	int err = inflateInit2(&stream, -15);
+	if (err != Z_OK) return err;
+
+	stream.next_out = dest;
+	stream.avail_out = 0;
+
+	do
+	{
+		if (stream.avail_out == 0)
+		{
+			stream.avail_out = left > static_cast<z_size_t>(max) ? max : static_cast<uInt>(left);
+			left -= stream.avail_out;
+		}
+		if (stream.avail_in == 0)
+		{
+			stream.avail_in = len > static_cast<z_size_t>(max) ? max : static_cast<uInt>(len);
+			len -= stream.avail_in;
+		}
+		err = inflate(&stream, Z_NO_FLUSH);
+	}
+	while (err == Z_OK);
+
+	/* Set len and left to the unused input data and unused output space. Set
+	*sourceLen to the amount of input consumed. Set *destLen to the amount
+	of data produced. */
+	len += stream.avail_in;
+	left += stream.avail_out;
+	//sourceLen -= len;
+	*destLen -= left;
+
+	inflateEnd(&stream);
+	return err == Z_STREAM_END ? Z_OK :
+		err == Z_NEED_DICT ? Z_DATA_ERROR  :
+		err == Z_BUF_ERROR && len == 0 ? Z_DATA_ERROR :
+		err;
+}
+
+CString CString::zuncompress2(bool& usedDeflate, const unsigned int buffSize) const
 {
 	CString retVal;
-	char* buf = new char[buffSize];
-	memset((void*)buf, 0, buffSize);
+	const auto buf = new char[buffSize];
+	memset(buf, 0, buffSize);
 	int error = 0;
 	unsigned long clen = buffSize;
 
-	if ((error = uncompress((Bytef *)buf, (uLongf *)&clen, (const Bytef *)buffer, length())) != Z_OK)
+	if ((error = uncompress(reinterpret_cast<Bytef *>(buf), &clen, reinterpret_cast<const Bytef *>(buffer), length())) != Z_OK)
+	{
+		// Try DEFLATE directly.
+		if (error == Z_DATA_ERROR)
+		{
+			const auto source = reinterpret_cast<const Bytef*>(buffer) + 2;
+			buf[0] = '\0';
+			clen = buffSize;
+			error = deflate_rfc1951(reinterpret_cast<Bytef *>(buf), &clen, source, length() - 2);
+			if (error == Z_OK)
+				usedDeflate = true;
+		}
+	}
+	if (error != Z_OK)
 	{
 		switch (error)
 		{
@@ -893,12 +967,15 @@ CString CString::zuncompress(unsigned int buffSize) const
 			case Z_DATA_ERROR:
 				printf("[zlib] The input data was corrupted.\n");
 				break;
+			default:
+				printf("[zlib] Unknown error while decompressing.\n");
+				break;
 		}
 		delete [] buf;
 		return retVal;
 	}
 
-	retVal.write(buf, clen);
+	retVal.write(buf, static_cast<int>(clen));
 	delete [] buf;
 	return retVal;
 }
@@ -1883,5 +1960,17 @@ CString& CString::zcompressI(unsigned int buffSize)
 CString& CString::zuncompressI(unsigned int buffSize)
 {
 	*this = zuncompress(buffSize);
+	return *this;
+}
+
+CString CString::zuncompress(unsigned int buffSize) const
+{
+	bool usedDeflate = false;
+	return zuncompress2(usedDeflate, buffSize);
+}
+
+CString& CString::zuncompress2I(bool& usedDeflate, unsigned int buffSize)
+{
+	*this = zuncompress2(usedDeflate, buffSize);
 	return *this;
 }

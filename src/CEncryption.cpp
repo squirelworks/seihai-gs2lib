@@ -25,12 +25,12 @@ const uint32_t CEncryption::ITERATOR_START[6] = {0, 0, 0x04A80B38, 0x4A80B38, 0x
 CEncryption::CEncryption()
 : m_key(0), m_limit(-1), m_gen(ENCRYPT_GEN_3)
 {
-	m_iterator = ITERATOR_START[m_gen];
+	m_lastIterator = m_iterator = ITERATOR_START[m_gen];
 }
 
-void CEncryption::reset(uint8_t key) {
+void CEncryption::reset(const uint8_t key) {
 	m_key = key;
-	m_iterator = ITERATOR_START[m_gen];
+	m_lastIterator = m_iterator = ITERATOR_START[m_gen];
 	m_limit = -1;
 }
 
@@ -49,10 +49,11 @@ void CEncryption::decrypt(CString& pBuf) {
 		// Single byte insertion/zlib compression.
 		case ENCRYPT_GEN_3:
 		{
+			m_lastIterator = m_iterator;
 			m_iterator *= 0x8088405;
 			m_iterator += m_key;
-			int pos = ((m_iterator & 0x0FFFF) % pBuf.length());
-			pBuf.removeI(pos, 1);
+			const auto pos = ((m_iterator & 0x0FFFF) % pBuf.length());
+			pBuf.removeI(static_cast<int>(pos), 1);
 		}
 		break;
 
@@ -61,25 +62,27 @@ void CEncryption::decrypt(CString& pBuf) {
 		case ENCRYPT_GEN_4:
 		case ENCRYPT_GEN_5:
 		{
-			const uint8_t* iterator = reinterpret_cast<const uint8_t*>(&m_iterator);
+			const auto iterator = reinterpret_cast<const uint8_t*>(&m_iterator);
 
 			for (int32_t i = 0; i < pBuf.length(); ++i)
 			{
 				if (i % 4 == 0)
 				{
 					if (m_limit == 0) return;
+					m_lastIterator = m_iterator;
 					m_iterator *= 0x8088405;
 					m_iterator += m_key;
 					if (m_limit > 0) m_limit--;
 				}
 
-				pBuf[i] ^= iterator[i%4];
+				pBuf[i] = static_cast<char>(pBuf[i] ^ iterator[i%4]);
 			}
 		}
 		break;
 
 		// Future encryption method.
 		case ENCRYPT_GEN_6:
+		default:
 			return;
 	}
 }
@@ -99,10 +102,11 @@ CString CEncryption::encrypt(CString pBuf)
 		// Single byte insertion.
 		case ENCRYPT_GEN_3:
 		{
+			m_lastIterator = m_iterator;
 			m_iterator *= 0x8088405;
 			m_iterator += m_key;
-			int pos = ((m_iterator & 0x0FFFF) % pBuf.length());
-			return CString() << pBuf.subString(0, pos) << ")" << pBuf.subString(pos);
+			const auto pos = ((m_iterator & 0x0FFFF) % pBuf.length());
+			return CString() << pBuf.subString(0, static_cast<int>(pos)) << ")" << pBuf.subString(static_cast<int>(pos));
 			break;
 		}
 
@@ -111,33 +115,36 @@ CString CEncryption::encrypt(CString pBuf)
 		case ENCRYPT_GEN_4:
 		case ENCRYPT_GEN_5:
 		{
-			const uint8_t* iterator = reinterpret_cast<const uint8_t*>(&m_iterator);
+			const auto iterator = reinterpret_cast<const uint8_t*>(&m_iterator);
 
 			for (int32_t i = 0; i < pBuf.length(); ++i)
 			{
 				if (i % 4 == 0)
 				{
 					if (m_limit == 0) return pBuf;
+					m_lastIterator = m_iterator;
 					m_iterator *= 0x8088405;
 					m_iterator += m_key;
 					if (m_limit > 0) m_limit--;
 				}
 
-				pBuf[i] ^= iterator[i%4];
+				pBuf[i] = static_cast<char>(pBuf[i] ^ iterator[i%4]);
 			}
 			return pBuf;
 			break;
 		}
+
+		default:;
 	}
 	return pBuf;
 }
 
-void CEncryption::limit(int32_t limit)
+void CEncryption::limit(const int32_t limit)
 {
 	m_limit = limit;
 }
 
-int CEncryption::limitFromType(uint8_t type)
+int CEncryption::limitFromType(const uint8_t type)
 {
 	// { type, limit, type2, limit2, ... }
 	static int limits[] = { 0x02, 0x0C, 0x04, 0x04, 0x06, 0x04 };

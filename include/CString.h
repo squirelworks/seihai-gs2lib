@@ -127,6 +127,7 @@ class CString
 		CString bzuncompress(unsigned int buffSize = 65536) const;
 		CString zcompress(unsigned int buffSize = 65536) const;
 		CString zuncompress(unsigned int buffSize = 65536) const;
+		CString zuncompress2(bool& usedDeflate, unsigned int buffSize = 65536) const;
 
 		int find(const CString& pString, int pStart = 0) const;
 		int find(const std::string_view& pString, int pStart = 0) const;
@@ -173,6 +174,7 @@ class CString
 		CString& bzuncompressI(unsigned int buffSize = 65536);
 		CString& zcompressI(unsigned int buffSize = 65536);
 		CString& zuncompressI(unsigned int buffSize = 65536);
+		CString& zuncompress2I(bool& usedDeflate, unsigned int buffSize = 65536);
 
 		inline CString& replaceAllI(const CString& pString, const CString& pNewString);
 		inline CString& gtokenizeI();
