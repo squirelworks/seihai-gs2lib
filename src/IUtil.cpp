@@ -71,13 +71,14 @@ static constexpr const char* const clientVersions[] =
 	"GNW21050",		// CLVER_1_37,
 	"",		// CLVER_1_371,
 	"GNW22060",		// CLVER_1_38,
-	"",		// CLVER_1_381,
+	"GNW02070",		// CLVER_1_381,
 	"GNW07080",		// CLVER_1_39,
-	"",		// CLVER_1_391,
+	"GNW12080",		// CLVER_1_391,
 	"",		// CLVER_1_392,
 	"",		// CLVER_1_4,
 	"",		// CLVER_1_41,
 	"GNW13110",		// CLVER_1_411,
+	"GNW03081",		// CLVER_2_052,
 	"GNW31101",		// CLVER_2_1,
 	"GNW01012",		// CLVER_2_12,
 	"GNW23012",		// CLVER_2_13,
@@ -125,6 +126,11 @@ static constexpr const char* const clientVersions[] =
 	nullptr
 };
 
+/* New World client versions
+G2NRC004	- NW RC?
+G2N29070	- NW 1.39
+*/
+
 static constexpr const char* const ncVersions[] =
 {
 	"",				// NCVER_UNKNOWN,
@@ -136,6 +142,7 @@ static constexpr const char* const ncVersions[] =
 static constexpr const char* const rcVersions[] =
 {
 	"",				// RCVER_UNKNOWN,
+	// GSERV019 = 1.0?
 	"GSERV023",		// RCVER_1_010,
 	"GSERV024",		// RCVER_1_1,
 	"GSERV025",		// RCVER_2,
@@ -173,6 +180,7 @@ static constexpr const char* const clientVersionString[] =
 	"1.40",		// CLVER_1_4,
 	"1.41",		// CLVER_1_41,
 	"1.41r1",	// CLVER_1_411,
+	"2.05r2",	// CLVER_2_05,
 	"2.1",		// CLVER_2_1,
 	"2.12",		// CLVER_2_12,
 	"2.13",		// CLVER_2_13,
