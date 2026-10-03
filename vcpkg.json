@@ -1,7 +1,7 @@
 {
   "name": "gs2lib",
   "version": "1.0.0",
-  "builtin-baseline": "5a874b05fb981e2643fd0c1c9ad63e19dfe76b27",
+  "builtin-baseline": "1600ce2ba1b6b621bfc5a31a785c4963b817a1c7",
   "dependencies": [
     "bzip2",
     "zlib",
