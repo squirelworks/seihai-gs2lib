@@ -51,6 +51,9 @@ static constexpr const char* const clientVersions[] =
 {
 	"",				// CLVER_UNKNOWN,
 	"",				// CLVER_NPCSERVER,
+
+    "G2N15041",     // CLVER_NW_2_02,
+
 	"",				// CLVER_1_20,
 	"GSERV007",		// CLVER_1_21,
 	"GSERV009",		// CLVER_1_25,
@@ -78,6 +81,13 @@ static constexpr const char* const clientVersions[] =
 	"",		// CLVER_1_4,
 	"",		// CLVER_1_41,
 	"GNW13110",		// CLVER_1_411,
+
+	"GNW24011",		// CLVER_2_0,
+    "GNW23021",     // CLVER_2_01,
+    "GNW15041",     // CLVER_2_02,
+    "GNW20041",     // CLVER_2_022,
+    "GNW06051",     // CLVER_2_03,
+    "GNW24061",     // CLVER_2_04,
 	"GNW03081",		// CLVER_2_052,
 	"GNW31101",		// CLVER_2_1,
 	"GNW01012",		// CLVER_2_12,
@@ -143,6 +153,7 @@ static constexpr const char* const rcVersions[] =
 {
 	"",				// RCVER_UNKNOWN,
 	// GSERV019 = 1.0?
+    // GSERV021 = graalnm24/26
 	"GSERV023",		// RCVER_1_010,
 	"GSERV024",		// RCVER_1_1,
 	"GSERV025",		// RCVER_2,
@@ -153,6 +164,9 @@ static constexpr const char* const clientVersionString[] =
 {
 	"",			// CLVER_UNKNOWN,
 	"(npcserver)",	// CLVER_NPCSERVER,
+
+    "NW 2.02",  // CLVER_NW_2_02,
+
 	"1.20",		// CLVER_1_20,
 	"1.21",		// CLVER_1_21,
 	"1.25",		// CLVER_1_25,
@@ -180,6 +194,13 @@ static constexpr const char* const clientVersionString[] =
 	"1.40",		// CLVER_1_4,
 	"1.41",		// CLVER_1_41,
 	"1.41r1",	// CLVER_1_411,
+
+	"2.0",		// CLVER_2_0,
+    "2.01",     // CLVER_2_01,
+    "2.02",     // CLVER_2_02,
+    "2.02r2",   // CLVER_2_022,
+    "2.03",     // CLVER_2_03,
+    "2.04",     // CLVER_2_04,
 	"2.05r2",	// CLVER_2_05,
 	"2.1",		// CLVER_2_1,
 	"2.12",		// CLVER_2_12,
