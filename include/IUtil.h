@@ -247,13 +247,13 @@ enum
 };
 
 int getVersionID(const CString& version);
-const char* getVersionString(const CString& version, const int type);
+const char* getVersionString(const CString& version, int type);
 int getNCVersionID(const CString& version);
 int getRCVersionID(const CString& version);
 signed char getColor(const CString& color);
 CString removeComments(const CString& code, const CString& newLine = "\n");
 CString removeExtension(const CString& file);
-int webSocketFixOutgoingPacket( CString& packetData );
-int webSocketFixIncomingPacket( CString& packetData );
+unsigned int webSocketFixOutgoingPacket(CString& packetData);
+unsigned int webSocketFixIncomingPacket(CString& packetData);
 
 #endif
