@@ -17,47 +17,56 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with GS2Emu. If not, see <http://www.gnu.org/licenses/>.
-*/
+ */
 
 #ifndef CFILEQUEUE_H
 #define CFILEQUEUE_H
 
+#include <cstdint>
 #include <queue>
-#include "CString.h"
-#include "CSocket.h"
-#include "CEncryption.h"
+
+#include <CEncryption.h>
+#include <CSocket.h>
+#include <CString.h>
 
 class CFileQueue
 {
-	public:
-		CFileQueue(CSocket* pSock) : sock(pSock), prev100(false), size100(0), bytesSentWithoutFile(0) {}
+public:
+    explicit CFileQueue(CSocket* pSock) : m_socket(pSock), m_bytesSentWithoutFile(0) {}
 
-		void addPacket(CString pPacket);
-		void clearBuffers();
-		void setSocket(CSocket* pSock)		{ sock = pSock; }
-		void setCodec(unsigned int gen, unsigned char key)
-		{
-			out_codec.setGen(gen);
-			out_codec.reset(key);
-		}
+    void addPacket(const CString& packet);
+    void addRawPacket(const CString& packet);
 
-		bool canSend();
+    void clearBuffers();
 
-		void sendCompress(bool forceSendFiles = false);
+    void setSocket(CSocket* pSock);
+    void setCodec(uint32_t gen, uint8_t key);
 
-	private:
-		CSocket* sock;
-		std::queue<CString> normalBuffer;
-		std::queue<CString> fileBuffer;
-		bool prev100;
-		unsigned int size100;
-		CString pack100;
-		CString oBuffer;
+    [[nodiscard]] bool canSend() const;
+    void sendCompress(bool forceSendFiles = false);
 
-		CEncryption out_codec;
+private:
+    CSocket* m_socket;
+    std::queue<std::pair<bool, CString>> m_normalBuffer;
+    std::queue<std::pair<bool, CString>> m_fileBuffer;
+    CString m_scratchBuffer;
+    CString m_sendBuffer;
 
-		int bytesSentWithoutFile;
-		int sendCallsWithoutData = 0;
+    CEncryption m_outputCodec;
+
+    int m_bytesSentWithoutFile;
+    int m_sendCallsWithoutData = 0;
 };
+
+inline void CFileQueue::setSocket(CSocket* pSock)
+{
+    m_socket = pSock;
+}
+
+inline void CFileQueue::setCodec(const uint32_t gen, const uint8_t key)
+{
+    m_outputCodec.setGen(gen);
+    m_outputCodec.reset(key);
+}
 
 #endif

@@ -17,246 +17,256 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with GS2Emu. If not, see <http://www.gnu.org/licenses/>.
-*/
+ */
 
 #include <queue>
+
+#include <CFileQueue.h>
+#include <IEnums.h>
 #include <IUtil.h>
-#include "IEnums.h"
-#include "CFileQueue.h"
 
-void CFileQueue::addPacket(CString pPacket)
+void CFileQueue::addPacket(const CString& packet)
 {
-	while (pPacket.bytesLeft() != 0)
-	{
-		// Protect against invalid packet ids.
-		if ((unsigned char)pPacket[pPacket.readPos()] < 0x20)
-			break;
+    // Check for empty or invalid packets.
+    if (packet.isEmpty() || static_cast<unsigned char>(packet[0]) < 0x20)
+        return;
 
-		unsigned char pId = pPacket.readGUChar();
-		pPacket.setRead(pPacket.readPos() - 1);
-		if (pId == PLO_RAWDATA)
-		{
-			// Read packet 100.
-			pack100 = CString() << pPacket.readString("\n") << "\n";
-			pack100.setRead(1);		// Don't read the packet ID.
-			prev100 = true;
-			size100 = pack100.readGUInt();
-		}
-		else
-		{
-			// Read the packet.  If the previous packet was 100, read the specified bytes.
-			// If it isn't level data, put it into the file buffer.
-			CString packet;
-			if (prev100)
-			{
-				packet = pPacket.readChars(size100);
-				if (packet.readGUChar() == PLO_BOARDPACKET)
-					normalBuffer.push(CString() << pack100 << packet);
-				else
-					fileBuffer.push(CString() << pack100 << packet);
-				prev100 = false;
-			}
-			else
-			{
-				// Else, read to \n.
-				if (out_codec.getGen() == ENCRYPT_GEN_6)
-					packet = pPacket;
-				else
-					packet = CString() << pPacket.readString("\n") << "\n";
-				// Certain file related packets go to the file buffer since they must be
-				// sent in order.
-				switch (pId)
-				{
-					case PLO_LARGEFILESTART:
-					case PLO_LARGEFILEEND:
-					case PLO_LARGEFILESIZE:
-						fileBuffer.push(packet);
-						break;
+    const auto packetId = static_cast<unsigned char>(packet[0] - 0x20);
 
-					// Everything else goes into the normal buffer.
-					default:
-						normalBuffer.push(packet);
-						break;
-				}
-			}
-		}
-	}
+    // Certain file related packets go to the file buffer since they must be
+    // sent in order.
+    switch (packetId)
+    {
+        case PLO_LARGEFILESTART:
+        case PLO_LARGEFILEEND:
+        case PLO_LARGEFILESIZE:
+            m_fileBuffer.emplace(false, packet);
+            break;
+
+        // Everything else goes into the normal buffer.
+        default:
+            m_normalBuffer.emplace(false, packet);
+            break;
+    }
+}
+
+void CFileQueue::addRawPacket(const CString& packet)
+{
+    // Check for empty or invalid packets.
+    if (packet.isEmpty() || static_cast<unsigned char>(packet[0]) < 0x20)
+        return;
+
+    // Get the length of the raw packet.
+    // Make sure we add space for the newline, if required.
+    int rawPacketLength = packet.length();
+    if (m_outputCodec.getGen() <= ENCRYPT_GEN_5)
+        rawPacketLength += 1;
+
+    auto& buffer = (static_cast<unsigned char>(packet[0] - 0x20) == PLO_BOARDPACKET) ? m_normalBuffer : m_fileBuffer;
+    buffer.emplace(true, packet);
 }
 
 void CFileQueue::clearBuffers()
 {
-	std::queue<CString>().swap(normalBuffer);
-	std::queue<CString>().swap(fileBuffer);
-	bytesSentWithoutFile = 0;
-	size100 = 0;
-	prev100 = false;
-	oBuffer.clear();
+    std::queue<std::pair<bool, CString>>().swap(m_normalBuffer);
+    std::queue<std::pair<bool, CString>>().swap(m_fileBuffer);
+    m_bytesSentWithoutFile = 0;
+    m_sendBuffer.clear();
 }
 
-bool CFileQueue::canSend()
+bool CFileQueue::canSend() const
 {
-	if (normalBuffer.size() != 0 || fileBuffer.size() != 0) return true;
-	return false;
+    if (!m_normalBuffer.empty() || !m_fileBuffer.empty())
+        return true;
+    return false;
 }
 
-void CFileQueue::sendCompress(bool forceSendFiles)
+void CFileQueue::sendCompress(const bool forceSendFiles)
 {
-	CString pSend;
+    // 0xF000 - potential PLO_RAWDATA size - potential newline.
+    constexpr int MAX_PACKET_SIZE = 0xF000 - 5 - 1;
 
-	if (sock == nullptr || sock->getState() == SOCKET_STATE_DISCONNECTED)
-		return;
+    if (m_socket == nullptr || m_socket->getState() == SOCKET_STATE_DISCONNECTED)
+        return;
 
-	// If the next normal packet is huge, lets "try" to send it.
-	// Everything else should skip because this may throw is way over the limit.
-	if (!normalBuffer.empty() && normalBuffer.front().length() > 0xF000)
-	{
-		pSend << normalBuffer.front();
-		normalBuffer.pop();
-	}
+    auto addPacket = [this](const std::pair<bool, CString>& packet)
+    {
+        // If this is a raw data packet, and we are not gen 6, prepend PLO_RAWDATA to the output.
+        if (packet.first == true && m_outputCodec.getGen() <= ENCRYPT_GEN_5)
+            m_scratchBuffer >> (char)PLO_RAWDATA >> (int)(packet.second.length() + 1) << '\n';
 
-	// If we haven't sent a file in a while, forcibly send one now.
-	if (pSend.length() == 0 && (bytesSentWithoutFile > 0x7FFF || forceSendFiles || sendCallsWithoutData >= 4) && !fileBuffer.empty())	// 32KB
-	{
-		bytesSentWithoutFile = 0;
-		pSend << fileBuffer.front();
-		fileBuffer.pop();
-	}
+        // Output the packet.
+        m_scratchBuffer << packet.second;
 
-	// Keep adding packets from normalBuffer until we hit 48KB or we run out of packets.
-	while (pSend.length() < 0xC000 && !normalBuffer.empty())	// 48KB
-	{
-		// If the next packet sticks us over 60KB, don't add it.
-		if (pSend.length() + normalBuffer.front().length() > 0xF000) break;
+        // Add the newline.
+        if (m_outputCodec.getGen() <= ENCRYPT_GEN_5)
+            m_scratchBuffer << '\n';
+    };
 
-		pSend << normalBuffer.front();
-		normalBuffer.pop();
-	}
-	bytesSentWithoutFile += pSend.length();
+    m_scratchBuffer.clear();
 
-	// If we have less than 16KB of data, try to add a file.
-	if (pSend.length() < 0x4000 && !fileBuffer.empty())	// 16KB
-	{
-		// If the next packet sticks us over 60KB, don't add it.
-		if (pSend.length() + fileBuffer.front().length() <= 0xF000)
-		{
-			bytesSentWithoutFile = 0;
-			pSend << fileBuffer.front();
-			fileBuffer.pop();
-		}
-	}
+    // If the next normal packet is huge, lets "try" to send it.
+    // Everything else should skip because this may throw it way over the limit.
+    if (!m_normalBuffer.empty() && m_normalBuffer.front().second.length() > MAX_PACKET_SIZE)
+    {
+        addPacket(m_normalBuffer.front());
+        m_normalBuffer.pop();
+    }
 
-	// Reset this if we have no files to send.
-	if (fileBuffer.empty()) bytesSentWithoutFile = 0;
+    // If we haven't sent a file in a while, forcibly send one now.
+    if (m_scratchBuffer.isEmpty() && (m_bytesSentWithoutFile > 0x7FFF || forceSendFiles || m_sendCallsWithoutData >= 4) && !m_fileBuffer.empty()) // 32KB
+    {
+        m_bytesSentWithoutFile = 0;
+        addPacket(m_fileBuffer.front());
+        m_fileBuffer.pop();
+    }
 
-	// If we have no data, just return.
-	if (pSend.length() == 0) {
-		if (sendCallsWithoutData < 5) {
-			sendCallsWithoutData++;
-		}
+    // Keep adding packets from normalBuffer until we hit 48KB or we run out of packets.
+    while (m_scratchBuffer.length() < 0xC000 && !m_normalBuffer.empty()) // 48KB
+    {
+        // If the next packet sticks us over 60KB, don't add it.
+        if (m_scratchBuffer.length() + m_normalBuffer.front().second.length() > MAX_PACKET_SIZE)
+            break;
 
-		return;
-	}
-	sendCallsWithoutData = 0;
+        addPacket(m_normalBuffer.front());
+        m_normalBuffer.pop();
+    }
+    m_bytesSentWithoutFile += m_scratchBuffer.length();
 
-	// compress buffer
-	switch (out_codec.getGen())
-	{
-		// Hijacking this: just send whatever is in the buffer
-		case ENCRYPT_GEN_6:
-		case ENCRYPT_GEN_1:
-		{
-			oBuffer << pSend;
-			if (sock->webSocket)
-				webSocketFixOutgoingPacket(oBuffer);
-			unsigned int dsize = oBuffer.length();
-			oBuffer.removeI(0, sock->sendData(oBuffer.text(), &dsize));
-			break;
-		}
+    // If we have less than 16KB of data, try to add a file.
+    if (m_scratchBuffer.length() < 0x4000 && !m_fileBuffer.empty()) // 16KB
+    {
+        // If the next packet sticks us over 60KB, don't add it.
+        if (m_scratchBuffer.length() + m_fileBuffer.front().second.length() <= MAX_PACKET_SIZE)
+        {
+            m_bytesSentWithoutFile = 0;
+            addPacket(m_fileBuffer.front());
+            m_fileBuffer.pop();
+        }
+    }
 
-		case ENCRYPT_GEN_2:
-		case ENCRYPT_GEN_3:
-		{
-			// Compress the packet.
-			pSend.zcompressI();
+    // Reset this if we have no files to send.
+    if (m_fileBuffer.empty())
+        m_bytesSentWithoutFile = 0;
 
-			// Sanity check.
-			if (pSend.length() > 0xFFFD)
-			{
-				printf("** [ERROR] Trying to send a GEN_3 packet over 65533 bytes!  Tossing data.\n");
-				return;
-			}
+    // If we have no data, just return.
+    if (m_scratchBuffer.isEmpty())
+    {
+        if (m_sendCallsWithoutData < 5)
+            m_sendCallsWithoutData++;
+        return;
+    }
+    m_sendCallsWithoutData = 0;
 
-			// Add the packet to the out buffer.
-			CString data = CString() << (short)pSend.length() << pSend;
-			oBuffer << data;
-			if (sock->webSocket)
-				webSocketFixOutgoingPacket(oBuffer);
-			unsigned int dsize = oBuffer.length();
-			oBuffer.removeI(0, sock->sendData(oBuffer.text(), &dsize));
-			break;
-		}
+    // compress buffer
+    switch (m_outputCodec.getGen())
+    {
+        // Just send whatever is in the buffer.
+        default:
+        case ENCRYPT_GEN_1:
+        case ENCRYPT_GEN_6:
+        {
+            m_sendBuffer << m_scratchBuffer;
 
-		case ENCRYPT_GEN_4:
-		{
-			pSend.bzcompressI();
+            if (m_socket->webSocket)
+                webSocketFixOutgoingPacket(m_sendBuffer);
 
-			// Sanity check.
-			if (pSend.length() > 0xFFFD)
-			{
-				printf("** [ERROR] Trying to send a GEN_4 packet over 65533 bytes!  Tossing data.\n");
-				return;
-			}
+            // Send.
+            unsigned int dsize = m_sendBuffer.length();
+            m_sendBuffer.removeI(0, m_socket->sendData(m_sendBuffer.text(), &dsize));
+            break;
+        }
 
-			// Encrypt the packet and add it to the out buffer.
-			out_codec.limitFromType(COMPRESS_BZ2);
-			pSend = out_codec.encrypt(pSend);
-			CString data = CString() << (short)pSend.length() << pSend;
-			oBuffer << data;
-			if (sock->webSocket)
-				webSocketFixOutgoingPacket(oBuffer);
-			unsigned int dsize = oBuffer.length();
-			oBuffer.removeI(0, sock->sendData(oBuffer.text(), &dsize));
-			break;
-		}
+        case ENCRYPT_GEN_2:
+        case ENCRYPT_GEN_3:
+        {
+            // Compress the packet.
+            m_scratchBuffer.zcompressI();
 
-		case ENCRYPT_GEN_5:
-		{
-			//unsigned int oldSize = pSend.length();
+            // Sanity check.
+            if (m_scratchBuffer.length() > 0xFFFD)
+            {
+                printf("** [ERROR] Trying to send a GEN_3 packet over 65533 bytes!  Tossing data.\n");
+                return;
+            }
 
-			// Choose which compression to use and apply it.
-			int compressionType = COMPRESS_UNCOMPRESSED;
-			if (pSend.length() > 0x2000)	// 8KB
-			{
-				compressionType = COMPRESS_BZ2;
-				pSend.bzcompressI();
-			}
-			else if (pSend.length() > 55)
-			{
-				compressionType = COMPRESS_ZLIB;
-				pSend.zcompressI();
-			}
+            // Add the packet to the out buffer.
+            m_sendBuffer << (short)m_scratchBuffer.length() << m_scratchBuffer;
 
-			//unsigned int newSize = pSend.length();
-			//printf("Compression [%s] - old size: %ld, new size: %ld\n", (compressionType == COMPRESS_UNCOMPRESSED ? "uncompressed" : (compressionType == COMPRESS_ZLIB ? "zlib" : "bz2")), oldSize, newSize);
+            if (m_socket->webSocket)
+                webSocketFixOutgoingPacket(m_sendBuffer);
 
-			// Sanity check.
-			if (pSend.length() > 0xFFFC)
-			{
-				printf("** [ERROR] Trying to send a GEN_5 packet over 65532 bytes!  Tossing data.\n");
-				return;
-			}
+            // Send.
+            unsigned int dsize = m_sendBuffer.length();
+            m_sendBuffer.removeI(0, m_socket->sendData(m_sendBuffer.text(), &dsize));
+            break;
+        }
 
-			// Encrypt the packet and add it to the out buffer.
-			out_codec.limitFromType(compressionType);
-			pSend = out_codec.encrypt(pSend);
+        case ENCRYPT_GEN_4:
+        {
+            m_scratchBuffer.bzcompressI();
 
-			CString data = CString() << (short)(pSend.length() + 1) << (char)compressionType << pSend;
-			oBuffer << data;
-			if (sock->webSocket)
-				webSocketFixOutgoingPacket(oBuffer);
-			unsigned int dsize = oBuffer.length();
-			oBuffer.removeI(0, sock->sendData(oBuffer.text(), &dsize));
-			break;
-		}
-	}
+            // Sanity check.
+            if (m_scratchBuffer.length() > 0xFFFD)
+            {
+                printf("** [ERROR] Trying to send a GEN_4 packet over 65533 bytes!  Tossing data.\n");
+                return;
+            }
+
+            // Encrypt the packet and add it to the out buffer.
+            m_outputCodec.limitFromType(COMPRESS_BZ2);
+            m_scratchBuffer = m_outputCodec.encrypt(m_scratchBuffer);
+            m_sendBuffer << (short)m_scratchBuffer.length() << m_scratchBuffer;
+
+            if (m_socket->webSocket)
+                webSocketFixOutgoingPacket(m_sendBuffer);
+
+            // Send.
+            unsigned int dsize = m_sendBuffer.length();
+            m_sendBuffer.removeI(0, m_socket->sendData(m_sendBuffer.text(), &dsize));
+            break;
+        }
+
+        case ENCRYPT_GEN_5:
+        {
+            // unsigned int oldSize = pSend.length();
+
+            // Choose which compression to use and apply it.
+            int compressionType = COMPRESS_UNCOMPRESSED;
+            if (m_scratchBuffer.length() > 0x2000) // 8KB
+            {
+                compressionType = COMPRESS_BZ2;
+                m_scratchBuffer.bzcompressI();
+            }
+            else if (m_scratchBuffer.length() > 55)
+            {
+                compressionType = COMPRESS_ZLIB;
+                m_scratchBuffer.zcompressI();
+            }
+
+            // unsigned int newSize = oSend.length();
+            // printf("Compression [%s] - old size: %ld, new size: %ld\n", (compressionType == COMPRESS_UNCOMPRESSED ?
+            // "uncompressed" : (compressionType == COMPRESS_ZLIB ? "zlib" : "bz2")), oldSize, newSize);
+
+            // Sanity check.
+            if (m_scratchBuffer.length() > 0xFFFC)
+            {
+                printf("** [ERROR] Trying to send a GEN_5 packet over 65532 bytes!  Tossing data.\n");
+                return;
+            }
+
+            // Encrypt the packet and add it to the out buffer.
+            m_outputCodec.limitFromType(compressionType);
+            m_scratchBuffer = m_outputCodec.encrypt(m_scratchBuffer);
+            m_sendBuffer << (short)(m_scratchBuffer.length() + 1) << (char)compressionType << m_scratchBuffer;
+
+            if (m_socket->webSocket)
+                webSocketFixOutgoingPacket(m_sendBuffer);
+
+            // Send.
+            unsigned int dsize = m_sendBuffer.length();
+            m_sendBuffer.removeI(0, m_socket->sendData(m_sendBuffer.text(), &dsize));
+            break;
+        }
+    }
 }
