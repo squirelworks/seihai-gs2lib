@@ -1,4 +1,5 @@
-﻿/*
+﻿// Modified by the Seihai project, 2026-10-31: see CHANGES-SEIHAI.md.
+/*
  * include/CEncryption.h
  *
  * Copyright 2008-2019 OpenGraal
@@ -38,6 +39,17 @@ enum
     ENCRYPT_GEN_6 = 5, // Graal v6 EILLLT.
 };
 
+// Seihai: how often the gen-5 iterator steps on a body.
+// Every client steps it once per started 4-byte group (rounded up), up to the
+// limit for the compression type. 5.12 steps it once per whole group only
+// (rounded down) on zlib and bz2 bodies, and leaves a partial last group as it
+// is; its uncompressed bodies step as everyone else's do.
+enum class Gen5Steps : uint8_t
+{
+    PerStartedGroup, // Round up: every client but 5.12.
+    PerWholeGroup,   // Round down on zlib and bz2 bodies: 5.12.
+};
+
 enum
 {
     COMPRESS_UNCOMPRESSED = 0x02,
@@ -60,6 +72,13 @@ public:
     void setGen(uint32_t gen);
     [[nodiscard]] uint32_t getGen() const noexcept;
 
+    // Seihai: the gen-5 step rule. reset() keeps it.
+    void setGen5Steps(Gen5Steps steps) noexcept { m_gen5Steps = steps; }
+    [[nodiscard]] Gen5Steps getGen5Steps() const noexcept { return m_gen5Steps; }
+
+    // Seihai: the step rule a client version id (CLVER_*) uses.
+    [[nodiscard]] static Gen5Steps gen5StepsForClient(int versionId) noexcept;
+
     // When 2.x clients send a broken zlib packet, we need to rollback the iterator one value so the next packet is decrypted properly.
     // For some reason, the client falls 1 iteration behind.
     void rollbackIterator() { m_iterator = m_lastIterator; }
@@ -70,6 +89,10 @@ private:
     int32_t m_limit;
     uint32_t m_gen;
     uint32_t m_lastIterator;
+    Gen5Steps m_gen5Steps = Gen5Steps::PerStartedGroup;
+    bool m_compressed = false; // The last limitFromType() was zlib or bz2.
+
+    void applyGen5Steps(int32_t length);
 };
 
 inline void CEncryption::setGen(const uint32_t gen)
