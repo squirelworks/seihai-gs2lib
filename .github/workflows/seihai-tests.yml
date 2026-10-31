@@ -1,0 +1,25 @@
+# Seihai project, 2026-10-31: see CHANGES-SEIHAI.md.
+name: seihai-tests
+
+on:
+  push:
+    branches: [seihai]
+  pull_request:
+    branches: [seihai]
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install build tools
+        run: sudo apt-get update && sudo apt-get install -y g++-14 ninja-build zlib1g-dev libbz2-dev
+      - name: Configure
+        run: CC=gcc-14 CXX=g++-14 cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Debug -DGS2LIB_TESTS=ON
+      - name: Build
+        run: cmake --build build -j
+      - name: Test
+        run: ctest --test-dir build --output-on-failure

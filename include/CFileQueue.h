@@ -1,4 +1,5 @@
-﻿/*
+﻿// Modified by the Seihai project, 2026-10-31: see CHANGES-SEIHAI.md.
+/*
  * include/CFileQueue.h
  *
  * Copyright 2007-2019 OpenGraal
@@ -41,6 +42,7 @@ public:
 
     void setSocket(CSocket* pSock);
     void setCodec(uint32_t gen, uint8_t key);
+    void setGen5Steps(Gen5Steps steps) noexcept { m_outputCodec.setGen5Steps(steps); } // Seihai
 
     [[nodiscard]] bool canSend() const;
     void sendCompress(bool forceSendFiles = false);

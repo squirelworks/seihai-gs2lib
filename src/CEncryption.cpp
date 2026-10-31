@@ -1,3 +1,4 @@
+// Modified by the Seihai project, 2026-10-31: see CHANGES-SEIHAI.md.
 /*
  * include/CEncryption.cpp
  *
@@ -20,6 +21,7 @@
  */
 
 #include <CEncryption.h>
+#include <IUtil.h>
 
 static constexpr std::array ITERATOR_START = {0U, 0U, 0x04A80B38U, 0x4A80B38U, 0x4A80B38U, 0U};
 
@@ -66,6 +68,7 @@ void CEncryption::decrypt(CString& pBuf)
         case ENCRYPT_GEN_4:
         case ENCRYPT_GEN_5:
         {
+            applyGen5Steps(pBuf.length());
             const auto iterator = reinterpret_cast<const uint8_t*>(&m_iterator);
 
             for (int32_t i = 0; i < pBuf.length(); ++i)
@@ -122,6 +125,7 @@ CString CEncryption::encrypt(CString pBuf)
         case ENCRYPT_GEN_4:
         case ENCRYPT_GEN_5:
         {
+            applyGen5Steps(pBuf.length());
             const auto iterator = reinterpret_cast<const uint8_t*>(&m_iterator);
 
             for (int32_t i = 0; i < pBuf.length(); ++i)
@@ -151,10 +155,31 @@ CString CEncryption::encrypt(CString pBuf)
 void CEncryption::limit(const int32_t limit)
 {
     m_limit = limit;
+    m_compressed = false;
+}
+
+// Seihai: with the round-down rule, a zlib or bz2 body steps once per whole
+// 4-byte group only, still at most the type's limit. A body shorter than
+// 4 bytes is then not XORed at all and does not step the iterator.
+void CEncryption::applyGen5Steps(const int32_t length)
+{
+    if (m_gen != ENCRYPT_GEN_5 || m_gen5Steps != Gen5Steps::PerWholeGroup || !m_compressed)
+        return;
+
+    const int32_t groups = length / 4;
+    if (m_limit < 0 || groups < m_limit)
+        m_limit = groups;
+}
+
+Gen5Steps CEncryption::gen5StepsForClient(const int versionId) noexcept
+{
+    return versionId == CLVER_5_12 ? Gen5Steps::PerWholeGroup : Gen5Steps::PerStartedGroup;
 }
 
 int CEncryption::limitFromType(const uint8_t type)
 {
+    m_compressed = (type == COMPRESS_ZLIB || type == COMPRESS_BZ2);
+
     // { type, limit, type2, limit2, ... }
     static int limits[] = {0x02, 0x0C, 0x04, 0x04, 0x06, 0x04};
     for (unsigned int i = 0; i < sizeof(limits) / sizeof(int); i += 2)
