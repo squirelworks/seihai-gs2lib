@@ -1,3 +1,4 @@
+// Modified by the Seihai project, 2026-10-31: see CHANGES-SEIHAI.md.
 /*
  * include/IUtil.cpp
  *
@@ -109,6 +110,7 @@ static constexpr const char* const clientVersions[] =
 	"G3D16053",		// CLVER_3,
 	"G3D27063",		// CLVER_3_01,
 	"G3D03014",		// CLVER_3_041,
+	"G3D28015",		// CLVER_3_153, Seihai lab patch
 
 	"G3D28095",		// CLVER_4_0211,
 	"G3D09125",		// CLVER_4_034,
@@ -222,6 +224,7 @@ static constexpr const char* const clientVersionString[] =
 	"3.0",		// CLVER_3,
 	"3.01",		// CLVER_3_01,
 	"3.041",	// CLVER_3_041,
+	"3.153",	// CLVER_3_153, Seihai lab patch
 
 	"4.0211",	// CLVER_4_0211,
 	"4.034",	// CLVER_4_034,
@@ -302,7 +305,10 @@ const char* getVersionString(const CString& version, const int type)
         }
         ++i;
     }
-    return nullptr;
+    // Seihai lab patch: an unknown token used to return nullptr, which the
+    // login log line ("Version: %s (%s)") and the allowed-versions string
+    // passed straight on, and the server aborted.
+    return "unknown";
 }
 
 int getNCVersionID(const CString& version)

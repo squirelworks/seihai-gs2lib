@@ -1,3 +1,4 @@
+// Modified by the Seihai project, 2026-10-31: see CHANGES-SEIHAI.md.
 /*
  * include/IUtil.h
  *
@@ -208,6 +209,7 @@ enum
 	CLVER_3,
 	CLVER_3_01,
 	CLVER_3_041,
+	CLVER_3_153, // Seihai lab patch: Graal 3.153 Mac (Feb 2005)
 
 	CLVER_4_0211,
 	CLVER_4_034,
