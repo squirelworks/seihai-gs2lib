@@ -1,3 +1,4 @@
+// Modified by the Seihai project, 2026-11-01: see CHANGES-SEIHAI.md.
 /*
  * include/CSocket.cpp
  *
@@ -24,7 +25,6 @@
 #include <cstdio>
 #include <memory>
 #include <thread>
-#include <unordered_set>
 #include <utility>
 #include <vector>
 
@@ -85,6 +85,7 @@
 	#include <net/if.h>
 	#include <netinet/in.h>
 	#include <netinet/tcp.h>
+	#include <poll.h>
 	#include <sys/types.h>
 	#include <sys/socket.h>
 
@@ -134,48 +135,156 @@
 static const char* errorMessage(int error);
 static int identifyError();
 
+namespace
+{
+	// select()'s fd_set aborts once a descriptor is past FD_SETSIZE (1024 on
+	// Linux). poll/WSAPoll does not. A closed socket's handle is
+	// INVALID_SOCKET, so a readable/hangup result is reported for the stub
+	// that still owns it rather than by testing that sentinel in an fd set.
+	struct ReadyFd
+	{
+		SOCKET fd = INVALID_SOCKET;
+		short events = 0;
+		short revents = 0;
+	};
+
+	int waitMilliseconds(const long sec, const long usec)
+	{
+		if (sec < 0)
+			return -1;
+		const long long ms = static_cast<long long>(sec) * 1000LL + (static_cast<long long>(usec) + 999LL) / 1000LL;
+		if (ms > 2147483647LL)
+			return 2147483647;
+		if (ms < 0)
+			return 0;
+		return static_cast<int>(ms);
+	}
+
+	int waitReady(ReadyFd* ready, const size_t count, const int timeoutMs)
+	{
+		if (count == 0)
+		{
+			if (timeoutMs > 0)
+				std::this_thread::sleep_for(std::chrono::milliseconds(timeoutMs));
+			return 0;
+		}
+
+#if defined(_WIN32) || defined(_WIN64)
+		std::vector<WSAPOLLFD> fds(count);
+		for (size_t i = 0; i < count; ++i)
+		{
+			fds[i].fd = ready[i].fd;
+			fds[i].events = ready[i].events;
+			fds[i].revents = 0;
+		}
+		const int rc = WSAPoll(fds.data(), static_cast<ULONG>(count), timeoutMs);
+		for (size_t i = 0; i < count; ++i)
+			ready[i].revents = fds[i].revents;
+		return rc;
+#else
+		std::vector<pollfd> fds(count);
+		for (size_t i = 0; i < count; ++i)
+		{
+			fds[i].fd = static_cast<int>(ready[i].fd);
+			fds[i].events = ready[i].events;
+			fds[i].revents = 0;
+		}
+		int rc = 0;
+		for (;;)
+		{
+			rc = ::poll(fds.data(), static_cast<nfds_t>(count), timeoutMs);
+			if (rc < 0 && errno == EINTR)
+				continue;
+			break;
+		}
+		for (size_t i = 0; i < count; ++i)
+			ready[i].revents = fds[i].revents;
+		return rc;
+#endif
+	}
+
+	bool readyToRead(const short revents)
+	{
+		return (revents & (POLLIN | POLLHUP | POLLERR | POLLNVAL)) != 0;
+	}
+
+	bool readyToWrite(const short revents)
+	{
+		return (revents & POLLOUT) != 0;
+	}
+
+	void forgetStub(std::vector<CSocketStub*>& list, CSocketStub* stub)
+	{
+		for (auto& s : list)
+		{
+			if (s == stub)
+				s = nullptr;
+		}
+	}
+}
+
 bool CSocketManager::update(const long sec, const long usec)
 {
-	fd_set set_read{};
-	fd_set set_write{};
-	struct timeval tm{};
+	std::vector<ReadyFd> ready;
+	std::vector<size_t> indexes;
+	ready.reserve(stubList.size());
+	indexes.reserve(stubList.size());
 
-	tm.tv_sec = sec;
-	tm.tv_usec = usec;
-	FD_ZERO(&set_read);
-	FD_ZERO(&set_write);
-
-	// Put all the socket handles into the set.
 	SOCKET max = 0;
-	for (const auto& stub : stubList)
+	for (size_t i = 0; i < stubList.size(); ++i)
 	{
-		if (stub == nullptr) continue;
-		if (const SOCKET sock = stub->getSocketHandle(); sock != INVALID_SOCKET)
-		{
-			if (sock > max) max = sock;
-			if (stub->canRecv()) FD_SET(sock, &set_read);
-			if (stub->canSend()) FD_SET(sock, &set_write);
-		}
+		CSocketStub* stub = stubList[i];
+		if (stub == nullptr)
+			continue;
+		const SOCKET sock = stub->getSocketHandle();
+		if (sock == INVALID_SOCKET)
+			continue;
+		short events = 0;
+		if (stub->canRecv())
+			events = static_cast<short>(events | POLLIN);
+		if (stub->canSend())
+			events = static_cast<short>(events | POLLOUT);
+		if (events == 0)
+			continue;
+		if (sock > max)
+			max = sock;
+		ReadyFd slot;
+		slot.fd = sock;
+		slot.events = events;
+		ready.push_back(slot);
+		indexes.push_back(i);
 	}
 	fd_max = max;
 
-	// Do the select.
-	select(fd_max + 1, &set_read, &set_write, nullptr, &tm);
+	(void)waitReady(ready.data(), ready.size(), waitMilliseconds(sec, usec));
 
-	// Loop through all the socket handles and call relevant functions.
-	for (auto& stub : stubList)
+	// Indexes stay valid: registerSocket appends to newStubs, and this loop
+	// only nulls entries. A callback may destroy a player; that player's
+	// destructor unregisters it, which nulls the slot before the object is gone.
+	for (size_t n = 0; n < ready.size(); ++n)
 	{
-		if (stub == nullptr) continue;
-		if (const SOCKET sock = stub->getSocketHandle(); sock != INVALID_SOCKET)
+		const size_t index = indexes[n];
+		if (index >= stubList.size())
+			continue;
+		CSocketStub* stub = stubList[index];
+		if (stub == nullptr)
+			continue;
+		const short revents = ready[n].revents;
+		if (revents == 0)
+			continue;
+
+		bool success = true;
+		if (readyToRead(revents))
+			success = stub->onRecv();
+
+		if (success && index < stubList.size() && stubList[index] == stub && readyToWrite(revents))
+			success = stub->onSend();
+
+		if (!success && index < stubList.size() && stubList[index] == stub)
 		{
-			bool success = true;
-			if (FD_ISSET(sock, &set_read)) success = stub->onRecv();
-			if (success && stub != nullptr && FD_ISSET(sock, &set_write)) success = stub->onSend();
-			if (!success && stub != nullptr)
-			{
-				stub->onUnregister();
-				stub = nullptr;
-			}
+			stub->onUnregister();
+			if (index < stubList.size() && stubList[index] == stub)
+				stubList[index] = nullptr;
 		}
 	}
 
@@ -194,44 +303,57 @@ bool CSocketManager::update(const long sec, const long usec)
 
 bool CSocketManager::updateSingle(CSocketStub* stub, const bool pRead, const bool pWrite, const long sec, const long usec)
 {
-	fd_set set_read{};
-	fd_set set_write{};
-	struct timeval tm{};
+	if (stub == nullptr)
+		return false;
 
-	if (stub == nullptr) return false;
-
-	tm.tv_sec = sec;
-	tm.tv_usec = usec;
-	FD_ZERO(&set_read);
-	FD_ZERO(&set_write);
-
-	// Put the socket handle into the set.
 	const SOCKET sock = stub->getSocketHandle();
-	if (sock == INVALID_SOCKET) return false;
-	if (pRead && stub->canRecv()) FD_SET(sock, &set_read);
-	if (pWrite && stub->canSend()) FD_SET(sock, &set_write);
+	if (sock == INVALID_SOCKET)
+		return false;
 
-	// Do the select.
-	select(fd_max + 1, &set_read, &set_write, nullptr, &tm);
+	ReadyFd slot;
+	slot.fd = sock;
+	if (pRead && stub->canRecv())
+		slot.events = static_cast<short>(slot.events | POLLIN);
+	if (pWrite && stub->canSend())
+		slot.events = static_cast<short>(slot.events | POLLOUT);
 
-	// Call relevant functions.
-	if (FD_ISSET(sock, &set_read))
+	// One socket. The old select() waited on every descriptor up to fd_max,
+	// so a single send still aborted once any connection was past FD_SETSIZE.
+	(void)waitReady(&slot, slot.events == 0 ? 0 : 1, waitMilliseconds(sec, usec));
+
+	auto stillRegistered = [&]()
+	{
+		return std::ranges::find(stubList, stub) != stubList.end()
+			|| std::ranges::find(newStubs, stub) != newStubs.end();
+	};
+	if (!stillRegistered())
+		return false;
+
+	if (readyToRead(slot.revents))
 	{
 		if (!stub->onRecv())
 		{
-			stub->onUnregister();
-			if (const auto i = std::ranges::find(stubList, stub); i != stubList.end())
-				*i = nullptr;
+			if (stillRegistered())
+			{
+				stub->onUnregister();
+				forgetStub(stubList, stub);
+				forgetStub(newStubs, stub);
+			}
 			return false;
 		}
 	}
-	if (FD_ISSET(sock, &set_write))
+	if (!stillRegistered())
+		return false;
+	if (readyToWrite(slot.revents))
 	{
 		if (!stub->onSend())
 		{
-			stub->onUnregister();
-			if (const auto i = std::ranges::find(stubList, stub); i != stubList.end())
-				*i = nullptr;
+			if (stillRegistered())
+			{
+				stub->onUnregister();
+				forgetStub(stubList, stub);
+				forgetStub(newStubs, stub);
+			}
 			return false;
 		}
 	}
@@ -253,53 +375,49 @@ bool CSocketManager::registerSocket(CSocketStub* stub)
 
 bool CSocketManager::unregisterSocket(CSocketStub* stub)
 {
-	if (stub == nullptr) return false;
-	static std::unordered_set<CSocketStub*> unregisterSet;
+	if (stub == nullptr)
+		return false;
 
-	// Function to search for sockets that match this handle and add them to the unregister set.
-	// This will also nullptr the stubs in the list so they can be removed later.
-	unregisterSet.clear();
-	auto findSocket = [](std::vector<CSocketStub*>& list, const SOCKET sock) -> bool
+	// Remove this stub only, and null the slot before onUnregister.
+	// Matching by handle treated INVALID_SOCKET as one socket, so closing
+	// one player called onUnregister on every other closed player. Those
+	// callbacks destroyed players, which re-entered this function and
+	// cleared a function-static set while it was being walked (SIGSEGV).
+	bool found = false;
+	auto take = [&](std::vector<CSocketStub*>& list)
 	{
-		bool found = false;
 		for (auto& s : list)
 		{
-			if (s == nullptr) continue;
-			if (const SOCKET sock2 = s->getSocketHandle(); sock2 == sock)
+			if (s == stub)
 			{
-				unregisterSet.emplace(s);
 				s = nullptr;
 				found = true;
 			}
 		}
-		return found;
 	};
+	take(stubList);
+	take(newStubs);
 
-	// Search for sockets in both the stub list and the new stub list.
-	const SOCKET sock = stub->getSocketHandle();
-	bool found = findSocket(stubList, sock);
-	found |= findSocket(newStubs, sock);
-
-	// Call onUnregister for all the sockets we found.
-	for (auto& s : unregisterSet)
-	{
-		if (s == nullptr) continue;
-		s->onUnregister();
-	}
-
+	if (found)
+		stub->onUnregister();
 	return found;
 }
 
 void CSocketManager::cleanup(const bool callOnUnregister)
 {
-	for (const auto stub : stubList)
+	auto finish = [&](std::vector<CSocketStub*>& list)
 	{
-		if (stub == nullptr) continue;
-
-		if (callOnUnregister)
-			stub->onUnregister();
-	}
-	stubList.clear();
+		for (const auto stub : list)
+		{
+			if (stub == nullptr)
+				continue;
+			if (callOnUnregister)
+				stub->onUnregister();
+		}
+		list.clear();
+	};
+	finish(stubList);
+	finish(newStubs);
 	fd_max = 0;
 }
 

@@ -5,6 +5,12 @@ Mirror of [gs2lib](https://bitbucket.org/xtjoeytx/gs2lib) (GPL-3.0, see `LICENSE
 `5c36ab8` (the commit GServer-v2 beta4 pins). Used by
 [seihai-gserver-v2](https://github.com/squirelworks/seihai-gserver-v2).
 
+## 2026-11-01
+
+| Change | Files | Checked with |
+|---|---|---|
+| The socket wait is `poll` (`WSAPoll` on Windows) instead of `select`, so a descriptor at or past `FD_SETSIZE` no longer aborts the process. `unregisterSocket` removes only the stub it was given and nulls that slot before `onUnregister`. It used to treat every closed socket as the same socket and walk a function-static set; one disconnect then destroyed the other closed players and re-entered that set. Once a client's normal queue already holds 4096 packets, further position updates (`PLO_OTHERPLPROPS`) are not queued, so a level full of walking players cannot grow that queue without bound. | `src/CSocket.cpp`, `include/CSocket.h`, `src/CFileQueue.cpp` | Synthetic 2.05 client (token `GNW03081`) on `127.0.0.1:14802` against seihai-gserver-v2. Unfixed: 1100 raw connections aborted (exit 134, `FD_SETSIZE`); 200 logged-in players died mid-disconnect. Fixed: 1100 raw connections stayed up; 1000 logged-in players, including 1000 walking, disconnected with the process still alive. RSS at 1000 walkers about 25 MB. |
+
 ## 2026-10-31
 
 | Change | Files | Checked with |
