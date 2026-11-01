@@ -1,3 +1,4 @@
+// Modified by the Seihai project, 2026-11-01: see CHANGES-SEIHAI.md.
 /*
  * include/CFileQueue.cpp
  *
@@ -25,6 +26,15 @@
 #include <IEnums.h>
 #include <IUtil.h>
 
+namespace
+{
+    // One walking player is sent to every other player on the level. Once a
+    // client's normal queue already holds this many packets, further
+    // PLO_OTHERPLPROPS are not queued. The next update still goes out after
+    // the queue drains, and a crowd of walkers cannot grow it without bound.
+    constexpr size_t kPositionFanoutCap = 4096;
+}
+
 void CFileQueue::addPacket(const CString& packet)
 {
     // Check for empty or invalid packets.
@@ -45,6 +55,8 @@ void CFileQueue::addPacket(const CString& packet)
 
         // Everything else goes into the normal buffer.
         default:
+            if (packetId == PLO_OTHERPLPROPS && m_normalBuffer.size() >= kPositionFanoutCap)
+                return;
             m_normalBuffer.emplace(false, packet);
             break;
     }

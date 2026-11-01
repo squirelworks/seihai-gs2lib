@@ -1,3 +1,4 @@
+// Modified by the Seihai project, 2026-11-01: see CHANGES-SEIHAI.md.
 /*
  * include/CCommon.h
  *
@@ -95,7 +96,8 @@ public:
 	//! Calls the functions of all the registered CSocketStub classes.
 	//! \param sec Seconds to wait.
 	//! \param usec Nanoseconds to wait.
-	//! \return False if select() returned nothing, true otherwise.
+	//! \return False if the wait was interrupted with nothing ready, true otherwise.
+	//! The wait is poll() (WSAPoll on Windows), which is not capped at FD_SETSIZE.
 	bool update(long sec = 0, long usec = 0);
 
 	//! Updates a single socket.
@@ -105,7 +107,8 @@ public:
 	//! \param pWrite Write to the socket.
 	//! \param sec Seconds to wait.
 	//! \param usec Nanoseconds to wait.
-	//! \return False if select() returned nothing, true otherwise.
+	//! \return False if the stub is gone or its socket is closed, true otherwise.
+	//! Waits on this socket only.
 	bool updateSingle(CSocketStub* stub, bool pRead, bool pWrite, long sec = 0, long usec = 0);
 
 	//! Registers a class derived from CSocketStub into the management system.
