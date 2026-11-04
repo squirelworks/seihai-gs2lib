@@ -5,6 +5,12 @@ Mirror of [gs2lib](https://bitbucket.org/xtjoeytx/gs2lib) (GPL-3.0, see `LICENSE
 `5c36ab8` (the commit GServer-v2 beta4 pins). Used by
 [seihai-gserver-v2](https://github.com/squirelworks/seihai-gserver-v2).
 
+## 2026-11-04
+
+| Change | Files | Checked with |
+|---|---|---|
+| The test workflow also builds and runs the unit tests on macOS (`macos-latest`, AppleClang, zlib and bzip2 from the SDK) and Windows (`windows-latest`, MSVC, zlib and bzip2 from the runner's vcpkg with the `x64-windows-static` triplet). The Linux job is unchanged. | `.github/workflows/seihai-tests.yml` | CI on all three platforms |
+
 ## 2026-11-01
 
 | Change | Files | Checked with |
