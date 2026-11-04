@@ -1,4 +1,4 @@
-# Seihai project, 2026-10-31: see CHANGES-SEIHAI.md.
+# Seihai project, 2026-10-31 (macOS and Windows jobs 2026-11-04): see CHANGES-SEIHAI.md.
 name: seihai-tests
 
 on:
@@ -23,3 +23,31 @@ jobs:
         run: cmake --build build -j
       - name: Test
         run: ctest --test-dir build --output-on-failure
+
+  macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install build tools
+        run: brew install ninja
+      # zlib and bzip2 come with the macOS SDK.
+      - name: Configure
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Debug -DGS2LIB_TESTS=ON
+      - name: Build
+        run: cmake --build build -j
+      - name: Test
+        run: ctest --test-dir build --output-on-failure
+
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      # zlib and bzip2 come from vcpkg (the runner's copy), in manifest mode from
+      # vcpkg.json, with the x64-windows-static triplet that CMakeLists.txt sets.
+      - name: Configure
+        shell: pwsh
+        run: cmake -S . -B build -A x64 -DGS2LIB_TESTS=ON "-DCMAKE_TOOLCHAIN_FILE=$env:VCPKG_INSTALLATION_ROOT/scripts/buildsystems/vcpkg.cmake"
+      - name: Build
+        run: cmake --build build --config Debug -j
+      - name: Test
+        run: ctest --test-dir build -C Debug --output-on-failure
