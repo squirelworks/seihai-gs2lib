@@ -34,7 +34,7 @@ typedef enum PlayerToServer
 	PLI_PLAYERPROPS		= 2,
 	PLI_NPCPROPS		= 3,
 	PLI_BOMBADD			= 4,
-	PLI_BOMBDEL			= 5,    // Interestingly, also seems to be associated with login packet on v6+
+	PLI_BOMBDEL			= 5,	// Interestingly, also seems to be associated with login packet on v6+
 	PLI_TOALL			= 6,
 	PLI_HORSEADD		= 7,
 	PLI_HORSEDEL		= 8,
@@ -54,7 +54,7 @@ typedef enum PlayerToServer
 	PLI_NPCDEL			= 22,
 	PLI_WANTFILE		= 23,
 	PLI_SHOWIMGPLAYER	= 24,
-	PLI_TOWEAPON		= 25,   // {25}{GSTRING name}{GSTRING image}{GSHORT scriptLength}{STRING script}. 1.21 to 1.37. Sends weapon script/info to server.
+	PLI_TOWEAPON		= 25,	// {25}{GSTRING name}{GSTRING image}{GSHORT scriptLength}{STRING script}. 1.21 to 1.37. Sends weapon script/info to server.
 	PLI_HURTPLAYER		= 26,
 	PLI_EXPLOSION		= 27,
 	PLI_PRIVATEMESSAGE	= 28,
@@ -159,9 +159,9 @@ typedef enum PlayerToServer
 	PLI_UPDATEPACKAGEREQUESTFILE= 159,	// {159]{(char)order?]{packagefilename}{modtime}
 	PLI_RC_FOLDERDELETE			= 160,
 	PLI_UPDATECLASS				= 161,	// {161}{INT5 modtime}{name} Class request.
-	PLI_PONG			        = 162,	// {162}{GCHAR type}{GSHORT value} - type is always 1 on a pong reply to PLO_PING.
-	PLI_SET_ENC_KEY             = 252,  // Set AES / RC4 encryption key and init vector
-	PLI_BUNDLE                  = 253   // Bundled packets contain multiple packets
+	PLI_PONG					= 162,	// {162}{GCHAR type}{GSHORT value} - type is always 1 on a pong reply to PLO_PING.
+	PLI_SET_ENC_KEY				= 252,	// Set AES / RC4 encryption key and init vector
+	PLI_BUNDLE					= 253	// Bundled packets contain multiple packets
 } PlayerToServer;
 
 typedef enum ServerToPlayer
@@ -259,7 +259,7 @@ typedef enum ServerToPlayer
 	PLO_UPDATEPACKAGESIZE		= 105,	// Valid message in 5.07 and 6.037.  The code it uses is unique. -Codr
 	PLO_UPDATEPACKAGEDONE		= 106,	// Valid message in 5.07 and 6.037.  The code it uses is unique. -Codr
 	PLO_BOARDLAYER				= 107,	// Basically PLO_LEVELBOARD for extra level layers.
-	PLO_PING				    = 108,  // {108}{GCHAR type}{GSHORT value} - Type 0 gets rebound in PLI_PONG.  Type 1 gets stored, maybe for displaying latency?
+	PLO_PING					= 108,	// {108}{GCHAR type}{GSHORT value} - Type 0 gets rebound in PLI_PONG.  Type 1 gets stored, maybe for displaying latency?
 	PLO_HTTPDOWNLOAD			= 109,	// {109}{GINT5 modTime?}{GSTRING localfile}{GSTRING url} - Downloads a file and saves it as localfile.
 	PLO_UNHANDLED110			= 110,
 	PLO_SETNETCOOKIE			= 111,	// {111}{STR cookie}
@@ -268,7 +268,7 @@ typedef enum ServerToPlayer
 	PLO_WEAPONBYTECODE			= 132,	// {132}{GSTRING weaponName}{bytecode} - [RAW] v4 through v5, send weapon FIRST
 	PLO_CLASSBYTECODE			= 133,	// {133}{GSTRING className}{bytecode} - [RAW] v4 through v5
 	PLO_GANISCRIPT				= 134,	// Might be used for package downloads. Looks to send gani scripts to client
-	PLO_NPCWEAPONSCRIPT			= 140,	// {140}{GSHORT info_length}{info}{bytecode}
+	PLO_WEAPONBYTECODE2			= 140,	// {140}{GSHORT info_length}{info}{bytecode}
 	PLO_NPCDEL2					= 150,	// {150}{GSTRING level}{GINT3 npcid}
 	PLO_HIDENPCS				= 151,	// {151} - This might delete all npcs with an id under 1000.
 	PLO_SAY2					= 153,	// {153}{text} - Also used for signs.
@@ -312,12 +312,12 @@ typedef enum ServerToPlayer
 	PLO_SHOOT2					= 191,	// Valid message in 5.07 and 6.037.  The code it uses is unique. -Codr
 	PLO_NC_WEAPONGET			= 192,	// {192}{GSTRING name}{GSTRING image}{script}  Codr note: Unhandled by 5.07+.
 	PLO_WEAPONHASH				= 193,	// {193}{GINT5 crc}{STRING name} - If the client's weapon script doesn't match, it sends PLI_UPDATESCRIPT in response.
-	PLO_RESETCLIENT     		= 194,	// {194} - Deletes non-login weapons and classes, deletes all NPCs, [v5] clears every loaded level and cache, [v6] and resets the main game object.
+	PLO_RESETCLIENT				= 194,	// {194} - Deletes non-login weapons and classes, deletes all NPCs, [v5] clears every loaded level and cache, [v6] and resets the main game object.
 	PLO_LOADGANI				= 195,	// {195}{GSTRING gani}{STRINGLIST ?} - The stringlist is SETBACKTO, but may contain other things.
 	PLO_LOADSCRIPT				= 197,	// {197}{STRINGLIST type,name,saveToDisk,desKey,crc32} type: weapon/npc/class/gani, saveToDisk: 1/0, desKey: 64-bit key split in two {GINT5}{GINT5}, crc32: {GINT5}
 	PLO_SERVEROPTIONS			= 198,	// {198}{GINT5 serverOptions}
-	PLO_SET_ENC_KEY             = 252,  // Set AES / RC4 encryption key and init vector
-	PLO_BUNDLE                  = 253   // Bundled packets contain multiple packets
+	PLO_SET_ENC_KEY				= 252,	// Set AES / RC4 encryption key and init vector
+	PLO_BUNDLE					= 253	// Bundled packets contain multiple packets
 } ServerToPlayer;
 
 enum
