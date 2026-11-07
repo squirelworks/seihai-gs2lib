@@ -1,3 +1,4 @@
+// Modified by the Seihai project, 2026-11-07: see CHANGES-SEIHAI.md.
 /*
  * include/IEnums.h
  *
@@ -25,8 +26,14 @@
 /*
 	Player
 */
-// PLI_UNKNOWN## are packets sent by the client whose
-// purpose is unknown.
+// PLI_UNKNOWN## and PLO_UNKNOWN## are packets whose purpose is still unknown.
+// A new name is added beside the old one; the old name stays as an alias so
+// callers keep compiling. Status words in the comments: confirmed, inferred, unknown.
+//
+// Ids with no enumerator, because no client in the materials (1.21 to 6.03r7,
+// staff clients 1999 to RC3) handles or sends them:
+//   PLI 42, 49, 95, 99 to 102, 120 to 129, 131 to 149, 153
+//   PLO 85 to 99, 112 to 123, 125 to 130, 135 to 139, 141 to 149, 152, 196
 typedef enum PlayerToServer
 {
 	PLI_LEVELWARP		= 0,
@@ -54,7 +61,10 @@ typedef enum PlayerToServer
 	PLI_NPCDEL			= 22,
 	PLI_WANTFILE		= 23,
 	PLI_SHOWIMGPLAYER	= 24,
-	PLI_UNKNOWN25		= 25,
+	// confirmed. {25}{str name}{str image}{script}, same layout as PLO_NPCWEAPONADD.
+	// Sent by 1.21 to 1.37 for every weapon held. 1.38 and later send PLI_WEAPONADD (33).
+	PLI_WEAPONUPLOAD		= 25,
+	PLI_UNKNOWN25		= PLI_WEAPONUPLOAD,	// deprecated alias
 	PLI_HURTPLAYER		= 26,
 	PLI_EXPLOSION		= 27,
 	PLI_PRIVATEMESSAGE	= 28,
@@ -159,7 +169,12 @@ typedef enum PlayerToServer
 	PLI_UPDATEPACKAGEREQUESTFILE= 159,	// {159]{(char)order?]{packagefilename}{modtime}
 	PLI_RC_FOLDERDELETE			= 160,
 	PLI_UPDATECLASS				= 161,	// {161}{INT5 modtime}{name} Class request.
-	PLI_RC_UNKNOWN162			= 162,	// Blank packet, sent by RC3 beta.
+	// confirmed (layout); inferred (that it is a ping).
+	// Game clients (4.20r6, 4.20r8, 6.x): answer to PLO_PING sub 0, {162}{'!'}{s value}
+	// (value capped at 0x6FFF). RCs (2010 build, RC3): empty, every 60 s as a keepalive.
+	// Not only a blank RC3 beta packet.
+	PLI_PING					= 162,
+	PLI_RC_UNKNOWN162			= PLI_PING,	// deprecated alias
 	PLI_SET_ENC_KEY             = 252,  // Set AES / RC4 encryption key and init vector
 	PLI_BUNDLE                  = 253   // Bundled packets contain multiple packets
 } PlayerToServer;
@@ -226,7 +241,10 @@ typedef enum ServerToPlayer
 	PLO_RC_ACCOUNTPROPSGET		= 57,
 	PLO_RC_ACCOUNTCHANGE		= 58,
 	PLO_RC_PLAYERPROPSCHANGE	= 59,
-	PLO_UNKNOWN60				= 60,	// Unhandled by 5.07+. -Codr
+	// unknown. No client 1.21 to 6.03r7 and no RC 1999 to RC3 handles it.
+	// In the 1.33-era RC, 60 was the RC's own outgoing "edit player: Apply"
+	// (later PLI_RC_PLAYERPROPSSET), not a server-to-client message.
+	PLO_UNKNOWN60				= 60,
 	PLO_RC_SERVERFLAGSGET		= 61,
 	PLO_RC_PLAYERRIGHTSGET		= 62,
 	PLO_RC_PLAYERCOMMENTSGET	= 63,
@@ -247,28 +265,56 @@ typedef enum ServerToPlayer
 	PLO_NC_CONTROL				= 78,	// HIJACKED BY GR!  No clue as to its official purpose.  Codr note: Unhandled by 5.07+.
 	PLO_NPCSERVERADDR			= 79,	// Bytes 1-2 are 0 and 2, followed by a string formatted as <ipaddr>,<port>.  Codr note: Unhandled by 5.07+.
 	PLO_NC_LEVELLIST			= 80,	// {80}{GSTRING levels}  Codr note: Unhandled by 5.07+.
-	PLO_UNKNOWN81				= 81,	// Unhandled by 5.07+. -Codr
+	// unknown. No game client, RC or NC handles it. Player prop 81 is unrelated.
+	PLO_UNKNOWN81				= 81,
 	PLO_SERVERTEXT				= 82,	// Answer to PLI_REQUESTTEXT and PLI_SENDTEXT.
-	PLO_UNKNOWN83				= 83,	// Unhandled by 5.07+. -Codr
+	// unknown. No game client, RC or NC handles it. The player prop UNKNOWN83 is a different thing.
+	PLO_UNKNOWN83				= 83,
 	PLO_LARGEFILESIZE			= 84,
 	PLO_RAWDATA					= 100,	// {100}{GINT3 length}
 	PLO_BOARDPACKET				= 101,
 	PLO_FILE					= 102,
 	PLO_RC_MAXUPLOADFILESIZE	= 103,	// {103}{GINT5 uploadFileSize} - Upload file size limit in bytes. Default to 20 mebibytes.
-	PLO_UNKNOWN104				= 104,	// {104}{GSTRING data}  data: {GCHAR a}{GINT5 x1}{GINT5 x2} - x1 and x2 decode into an 8 byte value, gets thrown into a hash list.
+	// confirmed (key); unknown (other values of byte a).
+	// {104}{str filename}{c a}{i5 lo}{i5 hi}: DES key for an encrypted package
+	// (.gpake) or .enc file. lo and hi join little-endian into 8 bytes. Send
+	// before the file. 6.03r7 decrypts a loose .enc only when a is 1.
+	// Handled 3.153 to 6.03r7.
+	PLO_FILEKEY					= 104,
+	PLO_UNKNOWN104				= PLO_FILEKEY,	// deprecated alias
 	PLO_UPDATEPACKAGESIZE		= 105,	// Valid message in 5.07 and 6.037.  The code it uses is unique. -Codr
 	PLO_UPDATEPACKAGEDONE		= 106,	// Valid message in 5.07 and 6.037.  The code it uses is unique. -Codr
 	PLO_BOARDLAYER				= 107,	// Basically PLO_LEVELBOARD for extra level layers.
-	PLO_UNKNOWN108				= 108,
-	PLO_UNKNOWN109				= 109,	// {109}{GINT5 modTime}{GSTRING url} - requests a file over the Internet, used for connector script?
-	PLO_UNKNOWN110				= 110,	// Unhandled.
+	// confirmed (sub 0); unknown (sub 1).
+	// {108}{c sub}{s value}. sub 0: the client answers PLI_PING with the value.
+	// sub 1: the client stores the value (what reads it is not traced; do not send sub 1).
+	// Handled by 4.20r6, 4.20r8, 6.01r1 and 6.03r7, taken before the main switch.
+	// Not handled by 5.00r7 to 5.31r4, or by anything before 4.20.
+	PLO_PING					= 108,
+	PLO_UNKNOWN108				= PLO_PING,	// deprecated alias
+	// confirmed (layout); inferred (role of the first string).
+	// {109}{i5 modtime}{str localname}{str url}: the client fetches url over
+	// HTTP(S) and stores it as localname. Handled 5.24r4 to 6.03r7.
+	PLO_DOWNLOADURL				= 109,
+	PLO_UNKNOWN109				= PLO_DOWNLOADURL,	// deprecated alias
+	// unknown. No client or RC handles it. 6.03 has 109 and 111 and no 110.
+	PLO_UNKNOWN110				= 110,
 	PLO_SETNETCOOKIE			= 111,	// {111}{STR cookie}
-	PLO_UNKNOWN124				= 124,	// 5/26/2019: RC3 receives this, only hint I seen was regarding receiving player flags? Didn't try to test it though
+	// inferred (name, from RC3's log text "received player flags"); unknown (layout).
+	// RC3 only: it logs that line and reads nothing. No game client handles it.
+	PLO_RC_PLAYERFLAGS			= 124,
+	PLO_UNKNOWN124				= PLO_RC_PLAYERFLAGS,	// deprecated alias
 	PLO_NPCBYTECODE				= 131,	// {131}{GINT3 code}{bytecode}
-	PLO_UNKNOWN132				= 132,	// Valid message in 5.07.  The code it uses is unique.  Unhandled by 6.037. -Codr
-	PLO_UNKNOWN133				= 133,	// {133}{STRING} - TGraalUniverse::addClassScript(), might register a class?
+	// inferred (area); unknown (layout). Handled by 3.153 to 5.x with 131 and 133
+	// for script and class registration (joined classes, public variables). Dropped in 6.x.
+	PLO_UNKNOWN132				= 132,
+	// inferred. {133}{text}. Same group as 132. Dropped in 6.x. Layout of the text is not read.
+	PLO_UNKNOWN133				= 133,
 	PLO_GANISCRIPT				= 134,	// Might be used for package downloads. Looks to send gani scripts to client
-	PLO_NPCWEAPONSCRIPT			= 140,	// {140}{GSHORT info_length}{script}
+	// confirmed. Header is type,name,cacheflag,i5,i5 (the two i5 values are the
+	// 8-byte DES key for the GRESCR01 cache, little-endian 32-bit words), then the body.
+	// With cache flag 1 the client writes the body it received. Handled with 197.
+	PLO_NPCWEAPONSCRIPT			= 140,
 	PLO_NPCDEL2					= 150,	// {150}{GSTRING level}{GINT3 npcid}
 	PLO_HIDENPCS				= 151,	// {151} - This might delete all npcs with an id under 1000.
 	PLO_SAY2					= 153,	// {153}{text} - Also used for signs.
@@ -286,7 +332,10 @@ typedef enum ServerToPlayer
 	PLO_MOVE					= 165,	// Unhandled by 6.037. -Codr
 	PLO_SHOWIMGNPC				= 166,	// {166}{GINT3 npcId}{GCHAR index}{props} - index: val-42 (something special happens on index 9), props: {GCHAR prop} - 0: {GSTRING image}, 1: {GCHAR fX}, 2: {GCHAR fY}, 3: {GCHAR layer}, 4: {GSHORT imgPartX}{GSHORT y}{GCHAR width}{GCHAR height}, 5: {GCHAR particle ?}{GCHAR ?}{GCHAR ?}{GCHAR ?}, 6: {GCHAR particle ?}, 7: {GCHAR z? angle? -82, then double()}, 8: {GCHAR particle ? max 3}
 	PLO_NC_WEAPONLISTGET		= 167,	// {167}{CHAR name1 length}{name1}{CHAR name2 length}{name2}...  Codr note: Unhandled by 5.07+.
-	PLO_UNKNOWN168				= 168,	// {168} - Login server sends this.
+	// confirmed (empty, sets a one-shot flag on the player); inferred (that the flag means "login done").
+	// {168}, empty. Handled 2.05 to 6.03r7. Sent after the login burst.
+	PLO_LOGGEDIN				= 168,
+	PLO_UNKNOWN168				= PLO_LOGGEDIN,	// deprecated alias
 	PLO_UPGRADEURL				= 169,	// When sent along with PLO_DISCONNECT, the reconnect button changes to "Upgrade" and it opens the URL when clicked.
 	PLO_GHOSTMODE				= 170,
 	PLO_BIGMAP					= 171,	// Unhandled by 6.037. -Codr
@@ -299,7 +348,9 @@ typedef enum ServerToPlayer
 	PLO_SERVERWARP				= 178,
 	PLO_RPGWINDOW				= 179,
 	PLO_STATUSLIST				= 180,
-	PLO_UNKNOWN181				= 181,	// {181}{GSHORT playerId}{GCHAR ?} - GCHAR is a toggle
+	// confirmed (layout); unknown (which per-player bool). No real name yet.
+	// {181}{s player id}{c toggle}: sets a bool to toggle > 0. Handled 2.17 to 5.24r4. Dropped in 5.30r3.
+	PLO_UNKNOWN181				= 181,
 	PLO_LISTPROCESSES			= 182,
 	PLO_HASPROCESSRUNNING		= 183,	// {183}{GSTRINGLIST text} - onSendHaveWindow - checks if a running process matches the list, client responds with PLI_PROCESSRUNNING.
 	PLO_TAKESCREENSHOT			= 184,	// {184}{STRING filename} - The string "screenshots" is present in the code, it seems to take a screenshot and safe as the filename.
@@ -311,10 +362,19 @@ typedef enum ServerToPlayer
 	PLO_SERVERLISTCONNECTED		= 190,	// {190} - the gserver connected to the listserver, informing the client it can log into IRC. NOTE: Sending this packet makes the client login to irc, request bantypes, pmguilds, pmservers, globalpms, buddytracking and stuff... Mainly tied to setText
 	PLO_SHOOT2					= 191,	// Valid message in 5.07 and 6.037.  The code it uses is unique. -Codr
 	PLO_NC_WEAPONGET			= 192,	// {192}{GSTRING name}{GSTRING image}{script}  Codr note: Unhandled by 5.07+.
-	PLO_UNKNOWN193				= 193,	// {193}{GINT5 ?}{?}
-	PLO_CLEARWEAPONS			= 194,	// {194} - Was blank.  Sent before weapon list.
+	// confirmed. {193}{i5 crc32}{weapon name}: "use your cached weblevels/weapons/<name>.code
+	// if its zlib CRC32 matches", else the client asks with PLI_UPDATESCRIPT.
+	// The i5 is a CRC32, not a mod time. Handled 4.04r2 to 5.12. Replaced by 197 in 5.24r4.
+	PLO_WEAPONCRC				= 193,
+	PLO_UNKNOWN193				= PLO_WEAPONCRC,	// deprecated alias
+	// confirmed. Empty. Handled 4.04r2 to 6.03r7. Clears the weapon and class
+	// script lists (4.20r8); 5.x and 6.x clear more of the loaded script state.
+	PLO_CLEARWEAPONS			= 194,
 	PLO_LOADGANI				= 195,	// {195}{GSTRING gani}{STRINGLIST ?} - The stringlist is SETBACKTO, but may contain other things.
-	PLO_LOADSCRIPT				= 197,	// {197}{STRINGLIST type,name,saveToDisk,desKey,crc32} type: weapon/npc/class/gani, saveToDisk: 1/0, desKey: 64-bit key split in two {GINT5}{GINT5}, crc32: {GINT5}
+	// confirmed. "Use your cache": same DES key as 140 and a CRC32 of the plain body.
+	// {197}{STRINGLIST type,name,saveToDisk,desKey,crc32}. The client decrypts its
+	// copy, checks the CRC32, and loads it on a match; otherwise it asks with PLI_UPDATESCRIPT (158).
+	PLO_LOADSCRIPT				= 197,
 	PLO_SERVEROPTIONS			= 198,	// {198}{GINT5 serverOptions}
 	PLO_SET_ENC_KEY             = 252,  // Set AES / RC4 encryption key and init vector
 	PLO_BUNDLE                  = 253   // Bundled packets contain multiple packets

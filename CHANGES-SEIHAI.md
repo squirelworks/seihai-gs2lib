@@ -5,6 +5,12 @@ Mirror of [gs2lib](https://bitbucket.org/xtjoeytx/gs2lib) (GPL-3.0, see `LICENSE
 `5c36ab8` (the commit GServer-v2 beta4 pins). Used by
 [seihai-gserver-v2](https://github.com/squirelworks/seihai-gserver-v2).
 
+## 2026-11-07
+
+| Change | Files | Checked with |
+|---|---|---|
+| Named the packet ids we now understand, and kept every old `*_UNKNOWN*` name as an alias with the same value. Client to server: 25 is `PLI_WEAPONUPLOAD` (1.21 to 1.37 weapon upload), 162 is `PLI_PING` (game-client answer to 108, and an empty RC keepalive). Server to client: 104 `PLO_FILEKEY`, 108 `PLO_PING`, 109 `PLO_DOWNLOADURL`, 124 `PLO_RC_PLAYERFLAGS`, 168 `PLO_LOGGEDIN`, 193 `PLO_WEAPONCRC`. 60, 81, 83, 110, 132, 133 and 181 stay unnamed, with the comment corrected. 140, 194 and 197 comments now match the cache and clear-weapons notes. Each comment is tagged confirmed, inferred or unknown. | `include/IEnums.h`, `tests/PacketNamesTest.cpp`, `CMakeLists.txt` | `PacketNamesTest` (each new name equals its id and its old alias). No real client: this change is names and comments only. |
+
 ## 2026-11-04
 
 | Change | Files | Checked with |
