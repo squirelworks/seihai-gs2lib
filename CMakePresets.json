@@ -13,6 +13,16 @@
       "cacheVariables": {
         "VCPKG_TARGET_TRIPLET": "x64-linux"
       }
+    },
+    {
+      "name": "macOS",
+      "inherits": [
+        "vcpkg"
+      ],
+      "generator": "Ninja",
+      "cacheVariables": {
+        "VCPKG_TARGET_TRIPLET": "x64-osx"
+      }
     }
   ]
 }
