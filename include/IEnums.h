@@ -1,4 +1,4 @@
-// Modified by the Seihai project, 2026-11-07: see CHANGES-SEIHAI.md.
+// Modified by the Seihai project, 2026-11-11: see CHANGES-SEIHAI.md.
 /*
  * include/IEnums.h
  *
@@ -26,8 +26,8 @@
 /*
 	Player
 */
-// PLI_UNKNOWN## and PLO_UNKNOWN## are packets whose purpose is still unknown.
-// A new name is added beside the old one; the old name stays as an alias so
+// Names follow upstream gs2lib (35056f8, 2026-11-06). Where Seihai or older
+// gs2lib used another name for the same id, that name stays as an alias so
 // callers keep compiling. Status words in the comments: confirmed, inferred, unknown.
 //
 // Ids with no enumerator, because no client in the materials (1.21 to 6.03r7,
@@ -63,9 +63,9 @@ typedef enum PlayerToServer
 	PLI_SHOWIMGPLAYER	= 24,
 	// confirmed. {25}{str name}{str image}{script}, same layout as PLO_NPCWEAPONADD.
 	// Sent by 1.21 to 1.37 for every weapon held. 1.38 and later send PLI_WEAPONADD (33).
-	PLI_WEAPONUPLOAD		= 25,
-	PLI_UNKNOWN25		= PLI_WEAPONUPLOAD,	// deprecated alias
-	PLI_TOWEAPON		= PLI_WEAPONUPLOAD,	// upstream gs2lib name (35056f8)
+	PLI_TOWEAPON		= 25,
+	PLI_WEAPONUPLOAD		= PLI_TOWEAPON,	// Seihai name (2026-11-07), kept as alias
+	PLI_UNKNOWN25		= PLI_TOWEAPON,	// deprecated alias
 	PLI_HURTPLAYER		= 26,
 	PLI_EXPLOSION		= 27,
 	PLI_PRIVATEMESSAGE	= 28,
@@ -174,9 +174,9 @@ typedef enum PlayerToServer
 	// Game clients (4.20r6, 4.20r8, 6.x): answer to PLO_PING sub 0, {162}{'!'}{s value}
 	// (value capped at 0x6FFF). RCs (2010 build, RC3): empty, every 60 s as a keepalive.
 	// Not only a blank RC3 beta packet.
-	PLI_PING					= 162,
-	PLI_RC_UNKNOWN162			= PLI_PING,	// deprecated alias
-	PLI_PONG					= PLI_PING,	// upstream gs2lib name (35056f8)
+	PLI_PONG					= 162,
+	PLI_PING					= PLI_PONG,	// Seihai name (2026-11-07), kept as alias
+	PLI_RC_UNKNOWN162			= PLI_PONG,	// deprecated alias
 	PLI_SET_ENC_KEY             = 252,  // Set AES / RC4 encryption key and init vector
 	PLI_BUNDLE                  = 253   // Bundled packets contain multiple packets
 } PlayerToServer;
@@ -248,8 +248,8 @@ typedef enum ServerToPlayer
 	// unknown. No client 1.21 to 6.03r7 and no RC 1999 to RC3 handles it.
 	// In the 1.33-era RC, 60 was the RC's own outgoing "edit player: Apply"
 	// (later PLI_RC_PLAYERPROPSSET), not a server-to-client message.
-	PLO_UNKNOWN60				= 60,
-	PLO_UNHANDLED60				= PLO_UNKNOWN60,	// upstream gs2lib name (35056f8)
+	PLO_UNHANDLED60				= 60,
+	PLO_UNKNOWN60				= PLO_UNHANDLED60,	// old name, kept as alias
 	PLO_RC_SERVERFLAGSGET		= 61,
 	PLO_RC_PLAYERRIGHTSGET		= 62,
 	PLO_RC_PLAYERCOMMENTSGET	= 63,
@@ -271,12 +271,12 @@ typedef enum ServerToPlayer
 	PLO_NPCSERVERADDR			= 79,	// Bytes 1-2 are 0 and 2, followed by a string formatted as <ipaddr>,<port>.  Codr note: Unhandled by 5.07+.
 	PLO_NC_LEVELLIST			= 80,	// {80}{GSTRING levels}  Codr note: Unhandled by 5.07+.
 	// unknown. No game client, RC or NC handles it. Player prop 81 is unrelated.
-	PLO_UNKNOWN81				= 81,
-	PLO_UNHANDLED81				= PLO_UNKNOWN81,	// upstream gs2lib name (35056f8)
+	PLO_UNHANDLED81				= 81,
+	PLO_UNKNOWN81				= PLO_UNHANDLED81,	// old name, kept as alias
 	PLO_SERVERTEXT				= 82,	// Answer to PLI_REQUESTTEXT and PLI_SENDTEXT.
 	// unknown. No game client, RC or NC handles it. The player prop UNKNOWN83 is a different thing.
-	PLO_UNKNOWN83				= 83,
-	PLO_UNHANDLED83				= PLO_UNKNOWN83,	// upstream gs2lib name (35056f8)
+	PLO_UNHANDLED83				= 83,
+	PLO_UNKNOWN83				= PLO_UNHANDLED83,	// old name, kept as alias
 	PLO_LARGEFILESIZE			= 84,
 	PLO_RAWDATA					= 100,	// {100}{GINT3 length}
 	PLO_BOARDPACKET				= 101,
@@ -287,9 +287,9 @@ typedef enum ServerToPlayer
 	// (.gpake) or .enc file. lo and hi join little-endian into 8 bytes. Send
 	// before the file. 6.03r7 decrypts a loose .enc only when a is 1.
 	// Handled 3.153 to 6.03r7.
-	PLO_FILEKEY					= 104,
-	PLO_UNKNOWN104				= PLO_FILEKEY,	// deprecated alias
-	PLO_FILEDECRYPTKEY			= PLO_FILEKEY,	// upstream gs2lib name (35056f8)
+	PLO_FILEDECRYPTKEY			= 104,
+	PLO_FILEKEY					= PLO_FILEDECRYPTKEY,	// Seihai name (2026-11-07), kept as alias
+	PLO_UNKNOWN104				= PLO_FILEDECRYPTKEY,	// deprecated alias
 	PLO_UPDATEPACKAGESIZE		= 105,	// Valid message in 5.07 and 6.037.  The code it uses is unique. -Codr
 	PLO_UPDATEPACKAGEDONE		= 106,	// Valid message in 5.07 and 6.037.  The code it uses is unique. -Codr
 	PLO_BOARDLAYER				= 107,	// Basically PLO_LEVELBOARD for extra level layers.
@@ -303,32 +303,35 @@ typedef enum ServerToPlayer
 	// confirmed (layout); inferred (role of the first string).
 	// {109}{i5 modtime}{str localname}{str url}: the client fetches url over
 	// HTTP(S) and stores it as localname. Handled 5.24r4 to 6.03r7.
-	PLO_DOWNLOADURL				= 109,
-	PLO_UNKNOWN109				= PLO_DOWNLOADURL,	// deprecated alias
-	PLO_HTTPDOWNLOAD			= PLO_DOWNLOADURL,	// upstream gs2lib name (35056f8)
+	PLO_HTTPDOWNLOAD			= 109,
+	PLO_DOWNLOADURL				= PLO_HTTPDOWNLOAD,	// Seihai name (2026-11-07), kept as alias
+	PLO_UNKNOWN109				= PLO_HTTPDOWNLOAD,	// deprecated alias
 	// unknown. No client or RC handles it. 6.03 has 109 and 111 and no 110.
-	PLO_UNKNOWN110				= 110,
-	PLO_UNHANDLED110			= PLO_UNKNOWN110,	// upstream gs2lib name (35056f8)
+	PLO_UNHANDLED110			= 110,
+	PLO_UNKNOWN110				= PLO_UNHANDLED110,	// old name, kept as alias
 	PLO_SETNETCOOKIE			= 111,	// {111}{STR cookie}
 	// inferred (name, from RC3's log text "received player flags"); unknown (layout).
 	// RC3 only: it logs that line and reads nothing. No game client handles it.
-	PLO_RC_PLAYERFLAGS			= 124,
-	PLO_UNKNOWN124				= PLO_RC_PLAYERFLAGS,	// deprecated alias
-	PLO_RC_UNKNOWN124			= PLO_RC_PLAYERFLAGS,	// upstream gs2lib name (35056f8)
+	PLO_RC_UNKNOWN124			= 124,
+	PLO_RC_PLAYERFLAGS			= PLO_RC_UNKNOWN124,	// Seihai name (2026-11-07), kept as alias
+	PLO_UNKNOWN124				= PLO_RC_UNKNOWN124,	// deprecated alias
 	PLO_NPCBYTECODE				= 131,	// {131}{GINT3 code}{bytecode}
 	// inferred (area); unknown (layout). Handled by 3.153 to 5.x with 131 and 133
 	// for script and class registration (joined classes, public variables). Dropped in 6.x.
-	PLO_UNKNOWN132				= 132,
-	PLO_WEAPONBYTECODE			= PLO_UNKNOWN132,	// upstream gs2lib 35056f8: {132}{GSTRING weaponName}{bytecode} - [RAW] v4 through v5, send weapon FIRST
+	// upstream gs2lib: {132}{GSTRING weaponName}{bytecode} - [RAW] v4 through v5, send weapon FIRST
+	PLO_WEAPONBYTECODE			= 132,
+	PLO_UNKNOWN132				= PLO_WEAPONBYTECODE,	// old name, kept as alias
 	// inferred. {133}{text}. Same group as 132. Dropped in 6.x. Layout of the text is not read.
-	PLO_UNKNOWN133				= 133,
-	PLO_CLASSBYTECODE			= PLO_UNKNOWN133,	// upstream gs2lib 35056f8: {133}{GSTRING className}{bytecode} - [RAW] v4 through v5
+	// upstream gs2lib: {133}{GSTRING className}{bytecode} - [RAW] v4 through v5
+	PLO_CLASSBYTECODE			= 133,
+	PLO_UNKNOWN133				= PLO_CLASSBYTECODE,	// old name, kept as alias
 	PLO_GANISCRIPT				= 134,	// Might be used for package downloads. Looks to send gani scripts to client
 	// confirmed. Header is type,name,cacheflag,i5,i5 (the two i5 values are the
 	// 8-byte DES key for the GRESCR01 cache, little-endian 32-bit words), then the body.
 	// With cache flag 1 the client writes the body it received. Handled with 197.
-	PLO_NPCWEAPONSCRIPT			= 140,
-	PLO_WEAPONBYTECODE2			= PLO_NPCWEAPONSCRIPT,	// upstream gs2lib 35056f8: {140}{GSHORT info_length}{info}{bytecode}
+	// upstream gs2lib: {140}{GSHORT info_length}{info}{bytecode}
+	PLO_WEAPONBYTECODE2			= 140,
+	PLO_NPCWEAPONSCRIPT			= PLO_WEAPONBYTECODE2,	// old name, kept as alias
 	PLO_NPCDEL2					= 150,	// {150}{GSTRING level}{GINT3 npcid}
 	PLO_HIDENPCS				= 151,	// {151} - This might delete all npcs with an id under 1000.
 	PLO_SAY2					= 153,	// {153}{text} - Also used for signs.
@@ -348,9 +351,9 @@ typedef enum ServerToPlayer
 	PLO_NC_WEAPONLISTGET		= 167,	// {167}{CHAR name1 length}{name1}{CHAR name2 length}{name2}...  Codr note: Unhandled by 5.07+.
 	// confirmed (empty, sets a one-shot flag on the player); inferred (that the flag means "login done").
 	// {168}, empty. Handled 2.05 to 6.03r7. Sent after the login burst.
-	PLO_LOGGEDIN				= 168,
-	PLO_UNKNOWN168				= PLO_LOGGEDIN,	// deprecated alias
-	PLO_ONLINEMODE				= PLO_LOGGEDIN,	// upstream gs2lib name (35056f8)
+	PLO_ONLINEMODE				= 168,
+	PLO_LOGGEDIN				= PLO_ONLINEMODE,	// Seihai name (2026-11-07), kept as alias
+	PLO_UNKNOWN168				= PLO_ONLINEMODE,	// deprecated alias
 	PLO_UPGRADEURL				= 169,	// When sent along with PLO_DISCONNECT, the reconnect button changes to "Upgrade" and it opens the URL when clicked.
 	PLO_GHOSTMODE				= 170,
 	PLO_BIGMAP					= 171,	// Unhandled by 6.037. -Codr
@@ -363,10 +366,11 @@ typedef enum ServerToPlayer
 	PLO_SERVERWARP				= 178,
 	PLO_RPGWINDOW				= 179,
 	PLO_STATUSLIST				= 180,
-	// confirmed (layout); unknown (which per-player bool). No real name yet.
+	// confirmed (layout); unknown (which per-player bool) in our notes; upstream reads it as the UDP "nearby" list.
 	// {181}{s player id}{c toggle}: sets a bool to toggle > 0. Handled 2.17 to 5.24r4. Dropped in 5.30r3.
-	PLO_UNKNOWN181				= 181,
-	PLO_PLAYERNOUDP				= PLO_UNKNOWN181,	// upstream gs2lib 35056f8: removes the player from the "nearby" list used by UDP peer-to-peer
+	// upstream gs2lib: removes the player from the "nearby" list used by UDP peer-to-peer
+	PLO_PLAYERNOUDP				= 181,
+	PLO_UNKNOWN181				= PLO_PLAYERNOUDP,	// old name, kept as alias
 	PLO_LISTPROCESSES			= 182,
 	PLO_HASPROCESSRUNNING		= 183,	// {183}{GSTRINGLIST text} - onSendHaveWindow - checks if a running process matches the list, client responds with PLI_PROCESSRUNNING.
 	PLO_TAKESCREENSHOT			= 184,	// {184}{STRING filename} - The string "screenshots" is present in the code, it seems to take a screenshot and safe as the filename.
@@ -381,13 +385,13 @@ typedef enum ServerToPlayer
 	// confirmed. {193}{i5 crc32}{weapon name}: "use your cached weblevels/weapons/<name>.code
 	// if its zlib CRC32 matches", else the client asks with PLI_UPDATESCRIPT.
 	// The i5 is a CRC32, not a mod time. Handled 4.04r2 to 5.12. Replaced by 197 in 5.24r4.
-	PLO_WEAPONCRC				= 193,
-	PLO_UNKNOWN193				= PLO_WEAPONCRC,	// deprecated alias
-	PLO_WEAPONHASH				= PLO_WEAPONCRC,	// upstream gs2lib name (35056f8)
+	PLO_WEAPONHASH				= 193,
+	PLO_WEAPONCRC				= PLO_WEAPONHASH,	// Seihai name (2026-11-07), kept as alias
+	PLO_UNKNOWN193				= PLO_WEAPONHASH,	// deprecated alias
 	// confirmed. Empty. Handled 4.04r2 to 6.03r7. Clears the weapon and class
 	// script lists (4.20r8); 5.x and 6.x clear more of the loaded script state.
-	PLO_CLEARWEAPONS			= 194,
-	PLO_RESETCLIENT				= PLO_CLEARWEAPONS,	// upstream gs2lib name (35056f8)
+	PLO_RESETCLIENT				= 194,
+	PLO_CLEARWEAPONS			= PLO_RESETCLIENT,	// old name, kept as alias
 	PLO_LOADGANI				= 195,	// {195}{GSTRING gani}{STRINGLIST ?} - The stringlist is SETBACKTO, but may contain other things.
 	// confirmed. "Use your cache": same DES key as 140 and a CRC32 of the plain body.
 	// {197}{STRINGLIST type,name,saveToDisk,desKey,crc32}. The client decrypts its
