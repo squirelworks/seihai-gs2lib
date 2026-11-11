@@ -1,4 +1,4 @@
-// Modified by the Seihai project, 2026-11-07: see CHANGES-SEIHAI.md.
+// Seihai project, 2026-11-07: see CHANGES-SEIHAI.md.
 //
 // This file is part of the Seihai fork of gs2lib and is released under the
 // GNU General Public License version 3 or later (see LICENSE.md).

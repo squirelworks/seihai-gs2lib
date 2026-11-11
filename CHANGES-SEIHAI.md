@@ -5,6 +5,12 @@ Mirror of [gs2lib](https://bitbucket.org/xtjoeytx/gs2lib) (GPL-3.0, see `LICENSE
 `5c36ab8` (the commit GServer-v2 beta4 pins). Used by
 [seihai-gserver-v2](https://github.com/squirelworks/seihai-gserver-v2).
 
+## 2026-11-11
+
+| Change | Files | Checked with |
+|---|---|---|
+| Housekeeping, no code change. The README says what this fork is, where the changes are listed and how to run the unit tests. `PacketNamesTest.cpp` is a new file, so its header says "Seihai project" like `Gen5StepsTest.cpp`, not "Modified by". | `README.md`, `tests/PacketNamesTest.cpp` | Local build with `-DGS2LIB_TESTS=ON`, both tests pass |
+
 ## 2026-11-07
 
 | Change | Files | Checked with |
