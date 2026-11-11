@@ -9,6 +9,7 @@ Mirror of [gs2lib](https://bitbucket.org/xtjoeytx/gs2lib) (GPL-3.0, see `LICENSE
 
 | Change | Files | Checked with |
 |---|---|---|
+| Housekeeping, no code change. The README says what this fork is, where the changes are listed and how to run the unit tests. `PacketNamesTest.cpp` is a new file, so its header says "Seihai project" like `Gen5StepsTest.cpp`, not "Modified by". | `README.md`, `tests/PacketNamesTest.cpp` | Local build with `-DGS2LIB_TESTS=ON`, both tests pass |
 | Merged upstream `35056f8` (upstream's own packet renames of 2026-11-06), which GServer-v2 beta4 `25396a1` needs. Our names stay the primary names; every upstream name is added as an alias with the same value: `PLI_TOWEAPON` (25), `PLI_PONG` (162), `PLO_UNHANDLED60/81/83/110`, `PLO_FILEDECRYPTKEY` (104), `PLO_HTTPDOWNLOAD` (109), `PLO_RC_UNKNOWN124`, `PLO_WEAPONBYTECODE` (132), `PLO_CLASSBYTECODE` (133), `PLO_WEAPONBYTECODE2` (140), `PLO_ONLINEMODE` (168), `PLO_PLAYERNOUDP` (181), `PLO_WEAPONHASH` (193), `PLO_RESETCLIENT` (194). For 26 the upstream name `PLO_NPCSETSCRIPT` becomes primary (we had no finding of our own) and `PLO_NPCACTION` stays as an alias. Upstream's whitespace-only edits to the same lines are not taken. | `include/IEnums.h`, `tests/PacketNamesTest.cpp` | `PacketNamesTest`; seihai-gserver-v2 merged with beta4 `25396a1` builds against it |
 
 ## 2026-11-07
