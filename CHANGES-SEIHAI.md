@@ -1,17 +1,19 @@
 # Seihai changes to gs2lib
 
 Mirror of [gs2lib](https://bitbucket.org/xtjoeytx/gs2lib) (GPL-3.0, see `LICENSE.md`).
-`master` is upstream's. Our changes are on branch `seihai`, based on upstream
-`35056f8` (the commit GServer-v2 beta4 pins since 2026-11-09). Used by
+`master` is a copy of upstream and can lag behind it. Our changes are on branch
+`seihai`, which includes upstream through `35056f8` (the commit GServer-v2 beta4
+pins since 2026-11-09). Used by
 [seihai-gserver-v2](https://github.com/squirelworks/seihai-gserver-v2).
 
 ## 2026-11-11
 
 | Change | Files | Checked with |
 |---|---|---|
+| Staleness pass, docs only. `README.md` and the header of this file no longer say `master` mirrors upstream exactly (it is still at `5c36ab8`; `seihai` already includes upstream through `35056f8`). The upstream-merge row below notes that the packet-names row superseded it. | `README.md`, `CHANGES-SEIHAI.md` | Read against the branches and `include/IEnums.h` |
 | Packet names now follow upstream gs2lib `35056f8`, which the community has researched longer. Upstream's name is the primary one for every id both sides named, and our 2026-11-07 names are aliases with the same value: `PLI_TOWEAPON` (25; alias `PLI_WEAPONUPLOAD`), `PLI_PONG` (162; `PLI_PING`), `PLO_FILEDECRYPTKEY` (104; `PLO_FILEKEY`), `PLO_HTTPDOWNLOAD` (109; `PLO_DOWNLOADURL`), `PLO_RC_UNKNOWN124` (124; `PLO_RC_PLAYERFLAGS`), `PLO_ONLINEMODE` (168; `PLO_LOGGEDIN`), `PLO_WEAPONHASH` (193; `PLO_WEAPONCRC`). Upstream's names for 60, 81, 83, 110, 132, 133, 140, 181 and 194 become primary too, with the older names as aliases. Our comments and status tags stay; where upstream gives a layout or meaning we did not have (132, 133, 140, 181), its note is added beside ours. No id or value changes. | `include/IEnums.h`, `tests/PacketNamesTest.cpp` | `PacketNamesTest` (each primary name equals its id, each alias equals its primary) |
 | Housekeeping, no code change. The README says what this fork is, where the changes are listed and how to run the unit tests. `PacketNamesTest.cpp` is a new file, so its header says "Seihai project" like `Gen5StepsTest.cpp`, not "Modified by". | `README.md`, `tests/PacketNamesTest.cpp` | Local build with `-DGS2LIB_TESTS=ON`, both tests pass |
-| Merged upstream `35056f8` (upstream's own packet renames of 2026-11-06), which GServer-v2 beta4 `25396a1` needs. Our names stay the primary names; every upstream name is added as an alias with the same value: `PLI_TOWEAPON` (25), `PLI_PONG` (162), `PLO_UNHANDLED60/81/83/110`, `PLO_FILEDECRYPTKEY` (104), `PLO_HTTPDOWNLOAD` (109), `PLO_RC_UNKNOWN124`, `PLO_WEAPONBYTECODE` (132), `PLO_CLASSBYTECODE` (133), `PLO_WEAPONBYTECODE2` (140), `PLO_ONLINEMODE` (168), `PLO_PLAYERNOUDP` (181), `PLO_WEAPONHASH` (193), `PLO_RESETCLIENT` (194). For 26 the upstream name `PLO_NPCSETSCRIPT` becomes primary (we had no finding of our own) and `PLO_NPCACTION` stays as an alias. Upstream's whitespace-only edits to the same lines are not taken. | `include/IEnums.h`, `tests/PacketNamesTest.cpp` | `PacketNamesTest`; seihai-gserver-v2 merged with beta4 `25396a1` builds against it |
+| Merged upstream `35056f8` (upstream's own packet renames of 2026-11-06), which GServer-v2 beta4 `25396a1` needs. Our names stay the primary names (superseded the same day by the "Packet names now follow upstream" row above: upstream's names are now primary); every upstream name is added as an alias with the same value: `PLI_TOWEAPON` (25), `PLI_PONG` (162), `PLO_UNHANDLED60/81/83/110`, `PLO_FILEDECRYPTKEY` (104), `PLO_HTTPDOWNLOAD` (109), `PLO_RC_UNKNOWN124`, `PLO_WEAPONBYTECODE` (132), `PLO_CLASSBYTECODE` (133), `PLO_WEAPONBYTECODE2` (140), `PLO_ONLINEMODE` (168), `PLO_PLAYERNOUDP` (181), `PLO_WEAPONHASH` (193), `PLO_RESETCLIENT` (194). For 26 the upstream name `PLO_NPCSETSCRIPT` becomes primary (we had no finding of our own) and `PLO_NPCACTION` stays as an alias. Upstream's whitespace-only edits to the same lines are not taken. | `include/IEnums.h`, `tests/PacketNamesTest.cpp` | `PacketNamesTest`; seihai-gserver-v2 merged with beta4 `25396a1` builds against it |
 
 ## 2026-11-07
 
