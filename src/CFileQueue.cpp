@@ -31,21 +31,18 @@ void CFileQueue::addPacket(const CString& packet)
     if (packet.isEmpty() || static_cast<unsigned char>(packet[0]) < 0x20)
         return;
 
-    const auto packetId = static_cast<unsigned char>(packet[0] - 0x20);
-
-    // Certain file related packets go to the file buffer since they must be
-    // sent in order.
-    switch (packetId)
+    // Certain file related packets go to the file buffer since they must be sent in order.
+    switch (packet[0] - 0x20)
     {
         case PLO_LARGEFILESTART:
         case PLO_LARGEFILEEND:
         case PLO_LARGEFILESIZE:
-            m_fileBuffer.emplace(false, packet);
+            addPacketToQueue(packet, false, true);
             break;
 
         // Everything else goes into the normal buffer.
         default:
-            m_normalBuffer.emplace(false, packet);
+            addPacketToQueue(packet, false, false);
             break;
     }
 }
@@ -56,14 +53,37 @@ void CFileQueue::addRawPacket(const CString& packet)
     if (packet.isEmpty() || static_cast<unsigned char>(packet[0]) < 0x20)
         return;
 
-    // Get the length of the raw packet.
-    // Make sure we add space for the newline, if required.
-    int rawPacketLength = packet.length();
-    if (m_outputCodec.getGen() <= ENCRYPT_GEN_5)
-        rawPacketLength += 1;
+    switch (packet[0] - 32)
+    {
+        // PLO_BOARDPACKET should go in the normal queue so it gets sent in-order.
+        case PLO_BOARDPACKET:
+            addPacketToQueue(packet, true, false);
+            break;
 
-    auto& buffer = (static_cast<unsigned char>(packet[0] - 0x20) == PLO_BOARDPACKET) ? m_normalBuffer : m_fileBuffer;
-    buffer.emplace(true, packet);
+        // Everything else can go to the file queue.
+        default:
+            addPacketToQueue(packet, true, true);
+    }
+}
+
+void CFileQueue::addPacketForceNormalQueue(const CString& packet)
+{
+    addPacketToQueue(packet, false, false);
+}
+
+void CFileQueue::addRawPacketForceNormalQueue(const CString& packet)
+{
+    addPacketToQueue(packet, true, false);
+}
+
+void CFileQueue::addPacketToQueue(const CString& packet, const bool rawPacket, const bool useFileQueue)
+{
+    if (packet.isEmpty())
+        return;
+
+    if (useFileQueue)
+        m_fileBuffer.emplace(rawPacket, packet);
+    else m_normalBuffer.emplace(rawPacket, packet);
 }
 
 void CFileQueue::clearBuffers()

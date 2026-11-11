@@ -36,6 +36,8 @@ public:
 
     void addPacket(const CString& packet);
     void addRawPacket(const CString& packet);
+    void addPacketForceNormalQueue(const CString& packet);
+    void addRawPacketForceNormalQueue(const CString& packet);
 
     void clearBuffers();
 
@@ -44,6 +46,9 @@ public:
 
     [[nodiscard]] bool canSend() const;
     void sendCompress(bool forceSendFiles = false);
+
+private:
+    void addPacketToQueue(const CString& packet, bool rawPacket, bool useFileQueue);
 
 private:
     CSocket* m_socket;
