@@ -1,4 +1,4 @@
-# Seihai project, 2026-10-31 (macOS and Windows jobs 2026-11-04): see CHANGES-SEIHAI.md.
+# Seihai project, 2026-10-31 (Windows job 2026-11-04; macOS moved to the lab VM 2026-11-12): see CHANGES-SEIHAI.md.
 name: seihai-tests
 
 on:
@@ -24,19 +24,8 @@ jobs:
       - name: Test
         run: ctest --test-dir build --output-on-failure
 
-  macos:
-    runs-on: macos-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Install build tools
-        run: brew install ninja
-      # zlib and bzip2 come with the macOS SDK.
-      - name: Configure
-        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Debug -DGS2LIB_TESTS=ON
-      - name: Build
-        run: cmake --build build -j
-      - name: Test
-        run: ctest --test-dir build --output-on-failure
+  # macOS is built and tested on the lab Sequoia VM with the macOS CMake
+  # preset, not on GitHub runners (README.md, "macOS builds").
 
   windows:
     runs-on: windows-latest

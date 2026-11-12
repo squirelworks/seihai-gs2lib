@@ -19,3 +19,11 @@ cmake -S . -B build -G Ninja -DGS2LIB_TESTS=ON
 cmake --build build
 ctest --test-dir build --output-on-failure
 ```
+
+## macOS builds
+
+macOS is not built on GitHub's macOS runners. It is built and tested on the
+lab's Sequoia (macOS 15) VM on GwenTea2 (`start-macos.sh`, then `ssh builder@`),
+with the macOS CMake preset (`CMakePresets.json`) and the tests the Linux job runs. GitHub CI covers
+Linux and Windows. Each VM run's log is kept as `~/Claude/sequoia-ci/<repo>.log`
+on GwenTea2.
