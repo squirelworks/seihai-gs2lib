@@ -10,6 +10,7 @@ pins since 2026-11-11). Used by
 
 | Change | Files | Checked with |
 |---|---|---|
+| 5.00r7 (token `G3D22067`) is labelled `"5.007"` in logs and the "Allowed:" message, not `"5.07"`. The build is 5.0.0.7, written like `"4.042"` for 4.04r2 and `"4.208"` for 4.20r8; there is no client 5.07. Display only: logins are matched by token. The upstream enum name `CLVER_5_07` stays. Closes #12. | `src/IUtil.cpp`, `tests/VersionLabelTest.cpp`, `CMakeLists.txt` | `VersionLabelTest` (5.00r7, 4.20r8 and 5.12 tokens map to their labels); local build with `-DGS2LIB_TESTS=ON`, all three tests pass |
 | Merged upstream `ef9dc6c` and `e269a79` (2026-11-11), which GServer-v2 beta4 `fe72da9` and later need. `CFileQueue::addPacket` and `addRawPacket` now take a `PacketQueue` (`NORMAL` or `FILE`) from the caller instead of picking the queue from the packet id, which fixes upstream's file queue ordering errors. Our cap on queued position updates stays: it now applies to `PLO_OTHERPLPROPS` added to the `NORMAL` queue. | `include/CFileQueue.h`, `src/CFileQueue.cpp` | Unit tests; seihai-gserver-v2 merged with beta4 `2de276b` builds against it |
 
 ## 2026-11-11
