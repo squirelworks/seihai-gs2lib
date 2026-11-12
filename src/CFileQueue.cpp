@@ -25,65 +25,26 @@
 #include <IEnums.h>
 #include <IUtil.h>
 
-void CFileQueue::addPacket(const CString& packet)
+void CFileQueue::addPacket(const PacketQueue queue, const CString& packet)
 {
     // Check for empty or invalid packets.
     if (packet.isEmpty() || static_cast<unsigned char>(packet[0]) < 0x20)
         return;
 
-    // Certain file related packets go to the file buffer since they must be sent in order.
-    switch (packet[0] - 0x20)
-    {
-        case PLO_LARGEFILESTART:
-        case PLO_LARGEFILEEND:
-        case PLO_LARGEFILESIZE:
-            addPacketToQueue(packet, false, true);
-            break;
-
-        // Everything else goes into the normal buffer.
-        default:
-            addPacketToQueue(packet, false, false);
-            break;
-    }
+    if (queue == PacketQueue::NORMAL)
+        m_normalBuffer.emplace(false, packet);
+    else m_fileBuffer.emplace(false, packet);
 }
 
-void CFileQueue::addRawPacket(const CString& packet)
+void CFileQueue::addRawPacket(const PacketQueue queue, const CString& packet)
 {
     // Check for empty or invalid packets.
     if (packet.isEmpty() || static_cast<unsigned char>(packet[0]) < 0x20)
         return;
 
-    switch (packet[0] - 32)
-    {
-        // PLO_BOARDPACKET should go in the normal queue so it gets sent in-order.
-        case PLO_BOARDPACKET:
-            addPacketToQueue(packet, true, false);
-            break;
-
-        // Everything else can go to the file queue.
-        default:
-            addPacketToQueue(packet, true, true);
-    }
-}
-
-void CFileQueue::addPacketForceNormalQueue(const CString& packet)
-{
-    addPacketToQueue(packet, false, false);
-}
-
-void CFileQueue::addRawPacketForceNormalQueue(const CString& packet)
-{
-    addPacketToQueue(packet, true, false);
-}
-
-void CFileQueue::addPacketToQueue(const CString& packet, const bool rawPacket, const bool useFileQueue)
-{
-    if (packet.isEmpty())
-        return;
-
-    if (useFileQueue)
-        m_fileBuffer.emplace(rawPacket, packet);
-    else m_normalBuffer.emplace(rawPacket, packet);
+    if (queue == PacketQueue::NORMAL)
+        m_normalBuffer.emplace(true, packet);
+    else m_fileBuffer.emplace(true, packet);
 }
 
 void CFileQueue::clearBuffers()

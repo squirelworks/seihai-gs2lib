@@ -29,15 +29,19 @@
 #include <CSocket.h>
 #include <CString.h>
 
+enum class PacketQueue
+{
+    NORMAL,
+    FILE
+};
+
 class CFileQueue
 {
 public:
     explicit CFileQueue(CSocket* pSock) : m_socket(pSock), m_bytesSentWithoutFile(0) {}
 
-    void addPacket(const CString& packet);
-    void addRawPacket(const CString& packet);
-    void addPacketForceNormalQueue(const CString& packet);
-    void addRawPacketForceNormalQueue(const CString& packet);
+    void addPacket(PacketQueue queue, const CString& packet);
+    void addRawPacket(PacketQueue queue, const CString& packet);
 
     void clearBuffers();
 
@@ -46,9 +50,6 @@ public:
 
     [[nodiscard]] bool canSend() const;
     void sendCompress(bool forceSendFiles = false);
-
-private:
-    void addPacketToQueue(const CString& packet, bool rawPacket, bool useFileQueue);
 
 private:
     CSocket* m_socket;
