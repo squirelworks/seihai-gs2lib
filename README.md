@@ -19,3 +19,7 @@ cmake -S . -B build -G Ninja -DGS2LIB_TESTS=ON
 cmake --build build
 ctest --test-dir build --output-on-failure
 ```
+
+## macOS builds
+
+macOS is built and tested on the lab's Sequoia (macOS 15) VM with the macOS CMake preset and the tests the Linux job runs; GitHub CI covers Linux and Windows.
