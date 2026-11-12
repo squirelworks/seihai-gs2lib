@@ -1,4 +1,4 @@
-// Modified by the Seihai project, 2026-11-01: see CHANGES-SEIHAI.md.
+// Modified by the Seihai project, 2026-11-01, 2026-11-12: see CHANGES-SEIHAI.md.
 /*
  * include/CFileQueue.cpp
  *
@@ -35,47 +35,30 @@ namespace
     constexpr size_t kPositionFanoutCap = 4096;
 }
 
-void CFileQueue::addPacket(const CString& packet)
+void CFileQueue::addPacket(const PacketQueue queue, const CString& packet)
 {
     // Check for empty or invalid packets.
     if (packet.isEmpty() || static_cast<unsigned char>(packet[0]) < 0x20)
         return;
 
-    const auto packetId = static_cast<unsigned char>(packet[0] - 0x20);
-
-    // Certain file related packets go to the file buffer since they must be
-    // sent in order.
-    switch (packetId)
+    if (queue == PacketQueue::NORMAL)
     {
-        case PLO_LARGEFILESTART:
-        case PLO_LARGEFILEEND:
-        case PLO_LARGEFILESIZE:
-            m_fileBuffer.emplace(false, packet);
-            break;
-
-        // Everything else goes into the normal buffer.
-        default:
-            if (packetId == PLO_OTHERPLPROPS && m_normalBuffer.size() >= kPositionFanoutCap)
-                return;
-            m_normalBuffer.emplace(false, packet);
-            break;
+        if (static_cast<unsigned char>(packet[0] - 0x20) == PLO_OTHERPLPROPS && m_normalBuffer.size() >= kPositionFanoutCap)
+            return;
+        m_normalBuffer.emplace(false, packet);
     }
+    else m_fileBuffer.emplace(false, packet);
 }
 
-void CFileQueue::addRawPacket(const CString& packet)
+void CFileQueue::addRawPacket(const PacketQueue queue, const CString& packet)
 {
     // Check for empty or invalid packets.
     if (packet.isEmpty() || static_cast<unsigned char>(packet[0]) < 0x20)
         return;
 
-    // Get the length of the raw packet.
-    // Make sure we add space for the newline, if required.
-    int rawPacketLength = packet.length();
-    if (m_outputCodec.getGen() <= ENCRYPT_GEN_5)
-        rawPacketLength += 1;
-
-    auto& buffer = (static_cast<unsigned char>(packet[0] - 0x20) == PLO_BOARDPACKET) ? m_normalBuffer : m_fileBuffer;
-    buffer.emplace(true, packet);
+    if (queue == PacketQueue::NORMAL)
+        m_normalBuffer.emplace(true, packet);
+    else m_fileBuffer.emplace(true, packet);
 }
 
 void CFileQueue::clearBuffers()

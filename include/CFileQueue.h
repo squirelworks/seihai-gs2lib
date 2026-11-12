@@ -1,4 +1,4 @@
-﻿// Modified by the Seihai project, 2026-10-31: see CHANGES-SEIHAI.md.
+﻿// Modified by the Seihai project, 2026-10-31, 2026-11-12: see CHANGES-SEIHAI.md.
 /*
  * include/CFileQueue.h
  *
@@ -30,13 +30,19 @@
 #include <CSocket.h>
 #include <CString.h>
 
+enum class PacketQueue
+{
+    NORMAL,
+    FILE
+};
+
 class CFileQueue
 {
 public:
     explicit CFileQueue(CSocket* pSock) : m_socket(pSock), m_bytesSentWithoutFile(0) {}
 
-    void addPacket(const CString& packet);
-    void addRawPacket(const CString& packet);
+    void addPacket(PacketQueue queue, const CString& packet);
+    void addRawPacket(PacketQueue queue, const CString& packet);
 
     void clearBuffers();
 
