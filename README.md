@@ -8,7 +8,7 @@ Common library for OpenGraal software
 This is the Seihai mirror of [gs2lib](https://bitbucket.org/xtjoeytx/gs2lib).
 `master` is a copy of upstream (it can lag behind upstream); the Seihai
 changes are on the default branch `seihai`, which includes upstream through
-`35056f8`, and are listed in [`CHANGES-SEIHAI.md`](CHANGES-SEIHAI.md).
+`e269a79`, and are listed in [`CHANGES-SEIHAI.md`](CHANGES-SEIHAI.md).
 [seihai-gserver-v2](https://github.com/squirelworks/seihai-gserver-v2) pins a
 commit of `seihai` in its `server/CMakeLists.txt`.
 

@@ -2,9 +2,15 @@
 
 Mirror of [gs2lib](https://bitbucket.org/xtjoeytx/gs2lib) (GPL-3.0, see `LICENSE.md`).
 `master` is a copy of upstream and can lag behind it. Our changes are on branch
-`seihai`, which includes upstream through `35056f8` (the commit GServer-v2 beta4
-pins since 2026-11-09). Used by
+`seihai`, which includes upstream through `e269a79` (the commit GServer-v2 beta4
+pins since 2026-11-11). Used by
 [seihai-gserver-v2](https://github.com/squirelworks/seihai-gserver-v2).
+
+## 2026-11-12
+
+| Change | Files | Checked with |
+|---|---|---|
+| Merged upstream `ef9dc6c` and `e269a79` (2026-11-11), which GServer-v2 beta4 `fe72da9` and later need. `CFileQueue::addPacket` and `addRawPacket` now take a `PacketQueue` (`NORMAL` or `FILE`) from the caller instead of picking the queue from the packet id, which fixes upstream's file queue ordering errors. Our cap on queued position updates stays: it now applies to `PLO_OTHERPLPROPS` added to the `NORMAL` queue. | `include/CFileQueue.h`, `src/CFileQueue.cpp` | Unit tests; seihai-gserver-v2 merged with beta4 `2de276b` builds against it |
 
 ## 2026-11-11
 
