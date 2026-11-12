@@ -1,4 +1,4 @@
-// Modified by the Seihai project, 2026-10-31: see CHANGES-SEIHAI.md.
+// Modified by the Seihai project, 2026-10-31 (5.007 label 2026-11-12): see CHANGES-SEIHAI.md.
 /*
  * include/IUtil.cpp
  *
@@ -232,7 +232,7 @@ static constexpr const char* const clientVersionString[] =
 	"4.110",	// CLVER_4_110,
 	"4.208",	// CLVER_4_208,
 
-	"5.07",		// CLVER_5_07,
+	"5.007",	// CLVER_5_07, Seihai: build 5.0.0.7 (5.00r7); there is no client 5.07
 	"5.12",		// CLVER_5_12,
 	"5.31x",	// CLVER_5_31x,
 

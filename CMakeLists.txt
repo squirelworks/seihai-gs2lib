@@ -256,6 +256,11 @@ if(GS2LIB_TESTS AND NET)
 	target_include_directories(PacketNamesTest PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)
 	set_target_properties(PacketNamesTest PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR})
 	add_test(NAME PacketNamesTest COMMAND PacketNamesTest)
+
+	add_executable(VersionLabelTest tests/VersionLabelTest.cpp)
+	target_link_libraries(VersionLabelTest PRIVATE ${TARGET_NAME})
+	set_target_properties(VersionLabelTest PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR})
+	add_test(NAME VersionLabelTest COMMAND VersionLabelTest)
 endif()
 
 # Packaging
