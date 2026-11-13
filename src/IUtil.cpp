@@ -1,4 +1,4 @@
-// Modified by the Seihai project, 2026-10-31 (5.007 label 2026-11-12, Mac ids 2026-11-13): see CHANGES-SEIHAI.md.
+// Modified by the Seihai project, 2026-10-31 (5.007 label 2026-11-12, Mac ids and catalogue tokens 2026-11-13): see CHANGES-SEIHAI.md.
 /*
  * include/IUtil.cpp
  *
@@ -80,9 +80,10 @@ static constexpr const char* const clientVersions[] =
 	"GNW07080",		// CLVER_1_39,
 	"GNW12080",		// CLVER_1_391,
 	"",		// CLVER_1_392,
-	"",		// CLVER_1_4,
+	"GNW23090",		// CLVER_1_4, Seihai: 1.40 and 1.40 rev1
 	"",		// CLVER_1_41,
 	"GNW13110",		// CLVER_1_411,
+	"GNW08011",		// CLVER_1_42_NEWMAIN, Seihai
 
 	"GNW24011",		// CLVER_2_0,
     "GNW23021",     // CLVER_2_01,
@@ -110,23 +111,34 @@ static constexpr const char* const clientVersions[] =
 	"G3D16053",		// CLVER_3,
 	"G3D27063",		// CLVER_3_01,
 	"G3D03014",		// CLVER_3_041,
+	"G3D27015",		// CLVER_3_151_LINUX, Seihai
 	"G3D28015",		// CLVER_3_153, Seihai lab patch
 
 	"G3D28095",		// CLVER_4_0211,
 	"G3D09125",		// CLVER_4_034,
+	"G3D11125",		// CLVER_4_031_LINUX, Seihai
 	"G3D17026",		// CLVER_4_042,
 	"G3D18026",		// CLVER_4_042_MAC, Seihai
+	"G3D19026",		// CLVER_4_042_LINUX, Seihai
 	"G3D26076",		// CLVER_4_110,
-	"G3D27076",		// CLVER_4_206_MAC, Seihai
+	"G3D27076",		// CLVER_4_102_MAC, Seihai
+	"G3D28076",		// CLVER_4_110_LINUX, Seihai
+	"G3D21126",		// CLVER_4_206_MAC, Seihai
+	"G3D22126",		// CLVER_4_208_LINUX, Seihai
 	"G3D20126",		// CLVER_4_208,
 
 	"G3D22067",		// CLVER_5_07,
 	"G3D14097",		// CLVER_5_12,
 	"G3D15097",		// CLVER_5_12_MAC, Seihai
+	"G3D03048",		// CLVER_6_00_BETA1, Seihai
 	"G3D15010",		// CLVER_5_24, Seihai
 	"G3D26090",		// CLVER_5_31x,
+	"G3D27090",		// CLVER_6_004_MAC, Seihai
+	"G3D28090",		// CLVER_6_00_LINUX_BETA, Seihai
 
 	"G3D3007A",		// CLVER_6_015,
+	"G3D3107A",		// CLVER_6_015_MAC, Seihai
+	"G3D0108A",		// CLVER_6_01_LINUX, Seihai
 	"G3D2505C",     // CLVER_6_034,
 	"G3D0311C",		// CLVER_6_037,
 	"G3D0511C",		// CLVER_6_037_LINUX,
@@ -159,6 +171,10 @@ static constexpr const char* const ncVersions[] =
 static constexpr const char* const rcVersions[] =
 {
 	"",				// RCVER_UNKNOWN,
+	// Seihai, from Graal_analysis client-internals/version-token-catalogue.md:
+	// GSERV010 = RemoteControl shipped with client 1.25, GSERV011 = the RC in
+	// the 1.27 package (later RC 1.28) and RC 1.3. Not entries: those RCs speak
+	// the 1999 GSERV protocol, which GServer-v2's RC handling was never run against.
 	// GSERV019 = 1.0?
     // GSERV021 = graalnm24/26
 	"GSERV023",		// RCVER_1_010,
@@ -201,6 +217,7 @@ static constexpr const char* const clientVersionString[] =
 	"1.40",		// CLVER_1_4,
 	"1.41",		// CLVER_1_41,
 	"1.41r1",	// CLVER_1_411,
+	"1.42 (NewMain)",	// CLVER_1_42_NEWMAIN, Seihai
 
 	"2.0",		// CLVER_2_0,
     "2.01",     // CLVER_2_01,
@@ -228,23 +245,34 @@ static constexpr const char* const clientVersionString[] =
 	"3.0",		// CLVER_3,
 	"3.01",		// CLVER_3_01,
 	"3.041",	// CLVER_3_041,
+	"3.151 (Linux)",	// CLVER_3_151_LINUX, Seihai
 	"3.153",	// CLVER_3_153, Seihai lab patch
 
 	"4.0211",	// CLVER_4_0211,
 	"4.034",	// CLVER_4_034,
+	"4.031 (Linux)",	// CLVER_4_031_LINUX, Seihai
 	"4.042",	// CLVER_4_042,
 	"4.042 (Mac)",	// CLVER_4_042_MAC, Seihai
+	"4.042 (Linux)",	// CLVER_4_042_LINUX, Seihai
 	"4.110",	// CLVER_4_110,
+	"4.102 (Mac)",	// CLVER_4_102_MAC, Seihai: was "4.206 (Mac)"
+	"4.110 (Linux)",	// CLVER_4_110_LINUX, Seihai
 	"4.206 (Mac)",	// CLVER_4_206_MAC, Seihai
+	"4.208 (Linux)",	// CLVER_4_208_LINUX, Seihai
 	"4.208",	// CLVER_4_208,
 
 	"5.007",	// CLVER_5_07, Seihai: build 5.0.0.7 (5.00r7); there is no client 5.07
 	"5.12",		// CLVER_5_12,
 	"5.12 (Mac)",	// CLVER_5_12_MAC, Seihai
+	"6.00 beta1",	// CLVER_6_00_BETA1, Seihai
 	"5.24",		// CLVER_5_24, Seihai
 	"5.31x",	// CLVER_5_31x,
+	"6.004 (Mac)",	// CLVER_6_004_MAC, Seihai
+	"6.00 beta (Linux)",	// CLVER_6_00_LINUX_BETA, Seihai
 
 	"6.015",		// CLVER_6_015,
+	"6.015 (Mac)",	// CLVER_6_015_MAC, Seihai
+	"6.01 (Linux)",	// CLVER_6_01_LINUX, Seihai
 	"6.034/6.035",		// CLVER_6_034,
 	"6.037",		// CLVER_6_037,
 	"6.037 (Linux)",		// CLVER_6_037_LINUX,
@@ -278,6 +306,14 @@ static constexpr const char* const rcVersionString[] =
 	nullptr
 };
 // clang-format on
+
+// Seihai: the token and label tables run parallel to the CLVER_* enum (plus the
+// three NSVER rows and the terminator). A row added to one and not the others
+// shifts every id after it, so check the lengths at compile time.
+static_assert(sizeof(clientVersions) / sizeof(clientVersions[0]) == CLVER_WORLDS + 1 + 3 + 1,
+			  "clientVersions[] is out of step with the CLVER_* enum");
+static_assert(sizeof(clientVersionString) / sizeof(clientVersionString[0]) == CLVER_WORLDS + 1 + 3 + 1,
+			  "clientVersionString[] is out of step with the CLVER_* enum");
 
 int getVersionID(const CString& version)
 {

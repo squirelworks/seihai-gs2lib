@@ -182,6 +182,7 @@ enum
 	CLVER_1_4,
 	CLVER_1_41,
 	CLVER_1_411,
+	CLVER_1_42_NEWMAIN, // Seihai: NewMain 24/26 (Jan 2001), token GNW08011
 
 	CLVER_2_0,
     CLVER_2_01,
@@ -209,23 +210,35 @@ enum
 	CLVER_3,
 	CLVER_3_01,
 	CLVER_3_041,
+	CLVER_3_151_LINUX, // Seihai: Graal 3.151 Linux, token G3D27015
 	CLVER_3_153, // Seihai lab patch: Graal 3.153 Mac (Feb 2005)
 
 	CLVER_4_0211,
 	CLVER_4_034,
+	CLVER_4_031_LINUX, // Seihai: Graal 4.03r1 Linux, token G3D11125
 	CLVER_4_042,
 	CLVER_4_042_MAC, // Seihai: Graal 4.04r2 Mac OS X PowerPC
+	CLVER_4_042_LINUX, // Seihai: Graal 4.04r2 Linux, token G3D19026
 	CLVER_4_110,
-	CLVER_4_206_MAC, // Seihai: Graal 4.20r6 Mac OS X PowerPC
+	CLVER_4_102_MAC, // Seihai: Mac OS X PowerPC build of 2006-09-19 (labelled "4.20r6" in the downloads), token G3D27076;
+	                 // the Mac 4.10r2 download sends the same token. Was CLVER_4_206_MAC.
+	CLVER_4_110_LINUX, // Seihai: Graal 4.10r2 and 4.11 Linux, token G3D28076
+	CLVER_4_206_MAC, // Seihai: the real Graal 4.20r6 Mac OS X PowerPC (binary 2006-12-21), token G3D21126
+	CLVER_4_208_LINUX, // Seihai: Graal 4.20r6/4.20r8 Linux, token G3D22126
 	CLVER_4_208,
 
 	CLVER_5_07,
 	CLVER_5_12,
 	CLVER_5_12_MAC, // Seihai: Graal 5.12 Mac OS X PowerPC
+	CLVER_6_00_BETA1, // Seihai: Graal 6.00 beta 1 Windows (token dated Apr 2008), token G3D03048
 	CLVER_5_24,     // Seihai: Graal 5.24r3/5.24r4 (and 6.00 beta 2), token G3D15010
 	CLVER_5_31x,
+	CLVER_6_004_MAC, // Seihai: Graal 6.004 Mac beta (June 2011), token G3D27090
+	CLVER_6_00_LINUX_BETA, // Seihai: Graal 6.x Linux beta (June 2011, probably 6.00r4), token G3D28090
 
 	CLVER_6_015,
+	CLVER_6_015_MAC, // Seihai: Graal 6.015 Mac, token G3D3107A
+	CLVER_6_01_LINUX, // Seihai: Graal 6.01r1 Linux (x86, x64), token G3D0108A
 	CLVER_6_034,
 	CLVER_6_037,
 	CLVER_6_037_LINUX,
