@@ -173,7 +173,18 @@ void CEncryption::applyGen5Steps(const int32_t length)
 
 Gen5Steps CEncryption::gen5StepsForClient(const int versionId) noexcept
 {
-    return versionId == CLVER_5_12 ? Gen5Steps::PerWholeGroup : Gen5Steps::PerStartedGroup;
+    // 5.12, and the Mac PowerPC 4.04r2 and 5.12: their frame ciphers step a
+    // zlib or bz2 body len >> 2 times (srawi), a raw one (len + 3) >> 2 times
+    // (read in both Mac binaries, Tiger lab 2026-11-13). 4.20r6 Mac was not read.
+    switch (versionId)
+    {
+        case CLVER_5_12:
+        case CLVER_4_042_MAC:
+        case CLVER_5_12_MAC:
+            return Gen5Steps::PerWholeGroup;
+        default:
+            return Gen5Steps::PerStartedGroup;
+    }
 }
 
 int CEncryption::limitFromType(const uint8_t type)
