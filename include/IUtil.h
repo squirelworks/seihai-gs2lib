@@ -222,6 +222,7 @@ enum
 	CLVER_5_07,
 	CLVER_5_12,
 	CLVER_5_12_MAC, // Seihai: Graal 5.12 Mac OS X PowerPC
+	CLVER_5_24,     // Seihai: Graal 5.24r3/5.24r4 (and 6.00 beta 2), token G3D15010
 	CLVER_5_31x,
 
 	CLVER_6_015,

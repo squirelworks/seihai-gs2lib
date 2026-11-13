@@ -123,6 +123,7 @@ static constexpr const char* const clientVersions[] =
 	"G3D22067",		// CLVER_5_07,
 	"G3D14097",		// CLVER_5_12,
 	"G3D15097",		// CLVER_5_12_MAC, Seihai
+	"G3D15010",		// CLVER_5_24, Seihai
 	"G3D26090",		// CLVER_5_31x,
 
 	"G3D3007A",		// CLVER_6_015,
@@ -240,6 +241,7 @@ static constexpr const char* const clientVersionString[] =
 	"5.007",	// CLVER_5_07, Seihai: build 5.0.0.7 (5.00r7); there is no client 5.07
 	"5.12",		// CLVER_5_12,
 	"5.12 (Mac)",	// CLVER_5_12_MAC, Seihai
+	"5.24",		// CLVER_5_24, Seihai
 	"5.31x",	// CLVER_5_31x,
 
 	"6.015",		// CLVER_6_015,
