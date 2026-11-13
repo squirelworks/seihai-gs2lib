@@ -33,6 +33,13 @@ int main()
 	check("G3D18026", "4.042 (Mac)");
 	check("G3D27076", "4.206 (Mac)");
 	check("G3D15097", "5.12 (Mac)");
+	// Seihai: 5.24r3/5.24r4 (and 6.00 beta 2) send G3D15010.
+	check("G3D15010", "5.24");
+	if (getVersionID(CString("G3D15010")) != CLVER_5_24)
+	{
+		std::printf("FAIL: G3D15010 is not CLVER_5_24\n");
+		++failures;
+	}
 	if (getVersionID(CString("G3D18026")) != CLVER_4_042_MAC || getVersionID(CString("G3D27076")) != CLVER_4_206_MAC
 		|| getVersionID(CString("G3D15097")) != CLVER_5_12_MAC)
 	{

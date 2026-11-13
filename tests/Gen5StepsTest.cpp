@@ -151,6 +151,9 @@ int main()
         CHECK(CEncryption::gen5StepsForClient(CLVER_4_042) == Gen5Steps::PerStartedGroup);
         CHECK(getVersionID("G3D18026") == CLVER_4_042_MAC);
         CHECK(getVersionID("G3D15097") == CLVER_5_12_MAC);
+        // 5.24 rounds up like 5.31x: the lab gserver ran it as G3D26090 (Oct 2026).
+        CHECK(getVersionID("G3D15010") == CLVER_5_24);
+        CHECK(CEncryption::gen5StepsForClient(CLVER_5_24) == Gen5Steps::PerStartedGroup);
     }
 
     if (failures != 0)
