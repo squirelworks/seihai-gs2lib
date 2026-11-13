@@ -1,4 +1,4 @@
-// Modified by the Seihai project, 2026-10-31: see CHANGES-SEIHAI.md.
+// Modified by the Seihai project, 2026-10-31, 2026-11-13: see CHANGES-SEIHAI.md.
 /*
  * include/IUtil.h
  *
