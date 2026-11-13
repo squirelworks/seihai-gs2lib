@@ -302,7 +302,7 @@ const char* getVersionString(const CString& version, const int type)
         }
         ++i;
     }
-    return nullptr;
+    return "unknown";
 }
 
 int getNCVersionID(const CString& version)
