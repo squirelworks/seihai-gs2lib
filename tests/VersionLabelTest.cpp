@@ -31,7 +31,7 @@ int main()
 	check("G3D14097", "5.12");
 	// Seihai: the Mac PowerPC builds have their own tokens and labels.
 	check("G3D18026", "4.042 (Mac)");
-	// The G3D27076 build was archived as "4.20r6"; it is a 4.10r2/4.11-era build.
+	// The G3D27076 build was labelled "4.20r6"; it is a 4.10r2/4.11-era build.
 	check("G3D27076", "4.102 (Mac)");
 	check("G3D21126", "4.206 (Mac)");
 	check("G3D15097", "5.12 (Mac)");

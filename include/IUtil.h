@@ -220,7 +220,7 @@ enum
 	CLVER_4_042_MAC, // Seihai: Graal 4.04r2 Mac OS X PowerPC
 	CLVER_4_042_LINUX, // Seihai: Graal 4.04r2 Linux, token G3D19026
 	CLVER_4_110,
-	CLVER_4_102_MAC, // Seihai: Mac OS X PowerPC build of 2006-09-19 (archived as "4.20r6"), token G3D27076;
+	CLVER_4_102_MAC, // Seihai: Mac OS X PowerPC build of 2006-09-19 (labelled "4.20r6" in the downloads), token G3D27076;
 	                 // the Mac 4.10r2 download sends the same token. Was CLVER_4_206_MAC.
 	CLVER_4_110_LINUX, // Seihai: Graal 4.10r2 and 4.11 Linux, token G3D28076
 	CLVER_4_206_MAC, // Seihai: the real Graal 4.20r6 Mac OS X PowerPC (binary 2006-12-21), token G3D21126
