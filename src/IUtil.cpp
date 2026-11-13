@@ -1,4 +1,4 @@
-// Modified by the Seihai project, 2026-10-31 (5.007 label 2026-11-12): see CHANGES-SEIHAI.md.
+// Modified by the Seihai project, 2026-10-31 (5.007 label 2026-11-12, Mac ids 2026-11-13): see CHANGES-SEIHAI.md.
 /*
  * include/IUtil.cpp
  *
@@ -115,11 +115,14 @@ static constexpr const char* const clientVersions[] =
 	"G3D28095",		// CLVER_4_0211,
 	"G3D09125",		// CLVER_4_034,
 	"G3D17026",		// CLVER_4_042,
+	"G3D18026",		// CLVER_4_042_MAC, Seihai
 	"G3D26076",		// CLVER_4_110,
+	"G3D27076",		// CLVER_4_206_MAC, Seihai
 	"G3D20126",		// CLVER_4_208,
 
 	"G3D22067",		// CLVER_5_07,
 	"G3D14097",		// CLVER_5_12,
+	"G3D15097",		// CLVER_5_12_MAC, Seihai
 	"G3D26090",		// CLVER_5_31x,
 
 	"G3D3007A",		// CLVER_6_015,
@@ -229,11 +232,14 @@ static constexpr const char* const clientVersionString[] =
 	"4.0211",	// CLVER_4_0211,
 	"4.034",	// CLVER_4_034,
 	"4.042",	// CLVER_4_042,
+	"4.042 (Mac)",	// CLVER_4_042_MAC, Seihai
 	"4.110",	// CLVER_4_110,
+	"4.206 (Mac)",	// CLVER_4_206_MAC, Seihai
 	"4.208",	// CLVER_4_208,
 
 	"5.007",	// CLVER_5_07, Seihai: build 5.0.0.7 (5.00r7); there is no client 5.07
 	"5.12",		// CLVER_5_12,
+	"5.12 (Mac)",	// CLVER_5_12_MAC, Seihai
 	"5.31x",	// CLVER_5_31x,
 
 	"6.015",		// CLVER_6_015,

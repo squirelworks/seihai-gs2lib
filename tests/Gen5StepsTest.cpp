@@ -143,6 +143,14 @@ int main()
         CHECK(CEncryption::gen5StepsForClient(CLVER_2_22) == Gen5Steps::PerStartedGroup);
         CHECK(CEncryption::gen5StepsForClient(CLVER_UNKNOWN) == Gen5Steps::PerStartedGroup);
         CHECK(getVersionID("G3D14097") == CLVER_5_12);
+        // The Mac PowerPC 4.04r2 and 5.12 round down too (read in their
+        // binaries, Tiger lab 2026-11-13); 4.20r6 Mac was not read.
+        CHECK(CEncryption::gen5StepsForClient(CLVER_4_042_MAC) == Gen5Steps::PerWholeGroup);
+        CHECK(CEncryption::gen5StepsForClient(CLVER_5_12_MAC) == Gen5Steps::PerWholeGroup);
+        CHECK(CEncryption::gen5StepsForClient(CLVER_4_206_MAC) == Gen5Steps::PerStartedGroup);
+        CHECK(CEncryption::gen5StepsForClient(CLVER_4_042) == Gen5Steps::PerStartedGroup);
+        CHECK(getVersionID("G3D18026") == CLVER_4_042_MAC);
+        CHECK(getVersionID("G3D15097") == CLVER_5_12_MAC);
     }
 
     if (failures != 0)

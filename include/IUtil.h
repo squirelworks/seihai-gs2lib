@@ -1,4 +1,4 @@
-// Modified by the Seihai project, 2026-10-31: see CHANGES-SEIHAI.md.
+// Modified by the Seihai project, 2026-10-31, 2026-11-13: see CHANGES-SEIHAI.md.
 /*
  * include/IUtil.h
  *
@@ -214,11 +214,14 @@ enum
 	CLVER_4_0211,
 	CLVER_4_034,
 	CLVER_4_042,
+	CLVER_4_042_MAC, // Seihai: Graal 4.04r2 Mac OS X PowerPC
 	CLVER_4_110,
+	CLVER_4_206_MAC, // Seihai: Graal 4.20r6 Mac OS X PowerPC
 	CLVER_4_208,
 
 	CLVER_5_07,
 	CLVER_5_12,
+	CLVER_5_12_MAC, // Seihai: Graal 5.12 Mac OS X PowerPC
 	CLVER_5_31x,
 
 	CLVER_6_015,
