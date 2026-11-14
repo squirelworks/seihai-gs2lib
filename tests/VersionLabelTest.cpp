@@ -65,6 +65,7 @@ int main()
 		{ "G3D28090", CLVER_6_00_LINUX_BETA, "6.00 beta (Linux)" },
 		{ "G3D3107A", CLVER_6_015_MAC, "6.015 (Mac)" },
 		{ "G3D0108A", CLVER_6_01_LINUX, "6.01 (Linux)" },
+		{ "G3D0208A", CLVER_IPHONE_CLASSICPLUS_1_13, "iPhone Classic+ 1.13" },
 	};
 	for (const Row& r : catalogue)
 	{
@@ -82,7 +83,9 @@ int main()
 		  && CLVER_4_110 < CLVER_4_102_MAC && CLVER_4_206_MAC < CLVER_4_208
 		  && CLVER_5_12_MAC < CLVER_6_00_BETA1 && CLVER_6_00_BETA1 < CLVER_5_24
 		  && CLVER_5_31x < CLVER_6_004_MAC && CLVER_6_00_LINUX_BETA < CLVER_6_015
-		  && CLVER_6_015 < CLVER_6_01_LINUX && CLVER_6_01_LINUX < CLVER_6_034))
+		  && CLVER_6_015 < CLVER_6_01_LINUX && CLVER_6_01_LINUX < CLVER_6_034
+		  && CLVER_IPHONE_1_11 < CLVER_IPHONE_CLASSICPLUS_1_13
+		  && CLVER_IPHONE_CLASSICPLUS_1_13 < CLVER_IPHONE_BELOTE_1_5))
 	{
 		std::printf("FAIL: enum order\n");
 		++failures;
