@@ -1,4 +1,4 @@
-// Seihai project, 2026-11-12, 2026-11-13: see CHANGES-SEIHAI.md.
+// Seihai project, 2026-11-12, 2026-11-13, 2026-11-14: see CHANGES-SEIHAI.md.
 //
 // This file is part of the Seihai fork of gs2lib and is released under the
 // GNU General Public License version 3 or later (see LICENSE.md).
@@ -14,9 +14,9 @@
 
 static int failures = 0;
 
-static void check(const char* token, const char* expected)
+static void check(const char* token, const char* expected, int type = PLTYPE_CLIENT)
 {
-	const char* got = getVersionString(CString(token), PLTYPE_CLIENT);
+	const char* got = getVersionString(CString(token), type);
 	if (got == nullptr || std::strcmp(got, expected) != 0)
 	{
 		std::printf("FAIL %s: expected \"%s\", got \"%s\"\n", token, expected, got ? got : "(null)");
@@ -26,6 +26,31 @@ static void check(const char* token, const char* expected)
 
 int main()
 {
+	// Select the table by type, including combined flags, before searching.
+	check("GSERV023", "1.010", PLTYPE_RC);
+	check("GSERV024", "1.1", PLTYPE_RC2);
+	check("GSERV025", "2.0", PLTYPE_RC);
+	check("NCL11012", "1.1", PLTYPE_NC);
+	check("NCL21075", "2.1", PLTYPE_NC);
+	for (int type : {PLTYPE_CLIENT, PLTYPE_NPCSERVER, PLTYPE_RC, PLTYPE_RC2, PLTYPE_NC})
+	{
+		check("BOGUS", "unknown", type);
+		check("", "", type);
+	}
+	check("GSERV023", "unknown", PLTYPE_NC);
+	check("NCL11012", "unknown", PLTYPE_RC);
+	check("G3D14097", "unknown", PLTYPE_RC);
+	check("G3D14097", "unknown", PLTYPE_NC);
+	check("GSERV023", "unknown", PLTYPE_CLIENT);
+	check("G3D14097", "5.12", PLTYPE_NPCSERVER);
+	check("GRNS0000", "[NPC-Server] Generic", PLTYPE_NPCSERVER);
+	check("G3D14097", "5.12", PLTYPE_CLIENT | PLTYPE_RC);
+	check("GSERV023", "unknown", PLTYPE_CLIENT | PLTYPE_RC);
+	check("GSERV023", "1.010", PLTYPE_RC | PLTYPE_NC);
+	check("NCL11012", "unknown", PLTYPE_RC | PLTYPE_NC);
+	check("G3D14097", "5.12", PLTYPE_NPCSERVER | PLTYPE_NC);
+	check("BOGUS", "unknown", 0);
+
 	check("G3D22067", "5.007");
 	check("G3D20126", "4.208");
 	check("G3D14097", "5.12");
