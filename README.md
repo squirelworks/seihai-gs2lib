@@ -1,4 +1,4 @@
-<!-- Modified by the Seihai project, 2026-11-11 (README rewritten 2026-11-13): see CHANGES-SEIHAI.md. -->
+<!-- Modified by the Seihai project, 2026-11-11, 2026-11-14 (README rewritten 2026-11-13): see CHANGES-SEIHAI.md. -->
 # seihai-gs2lib
 
 The Seihai fork of [gs2lib](https://bitbucket.org/xtjoeytx/gs2lib), the C++
@@ -42,15 +42,19 @@ commit of `seihai` in its `server/CMakeLists.txt`.
 ## Building
 
 You need CMake 3.27 or newer, a C++ compiler (GCC 14, Clang or MSVC), Ninja,
-zlib and bzip2. Two options change the build: `-DSTATIC=OFF` links the C++
-runtime dynamically, and `-DNET=OFF` leaves out the networking code.
+zlib and bzip2. `STATIC` defaults to `ON` and selects a static gs2lib library;
+`-DSTATIC=OFF` selects a shared library. With GCC, `STATIC=ON` also adds
+`-static-libstdc++`; `STATIC=OFF` omits that option. MSVC's runtime is configured
+as static (`MultiThreaded`, or `MultiThreadedDebug` for Debug) regardless of
+`STATIC`. `-DNET=OFF` leaves out the networking code.
 
 ```sh
 cmake -S . -B build -G Ninja
 cmake --build build
 ```
 
-Unit tests are off by default:
+Unit tests are off by default and are created only when both `GS2LIB_TESTS`
+and `NET` are `ON` (`NET` defaults to `ON`):
 
 ```sh
 cmake -S . -B build -G Ninja -DGS2LIB_TESTS=ON
