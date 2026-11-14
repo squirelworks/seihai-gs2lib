@@ -1,4 +1,4 @@
-// Modified by the Seihai project, 2026-10-31 (5.007 label 2026-11-12, Mac ids and catalogue tokens 2026-11-13): see CHANGES-SEIHAI.md.
+// Modified by the Seihai project, 2026-10-31 (5.007 label 2026-11-12, Mac ids and catalogue tokens 2026-11-13, RC/NC bounds 2026-11-14): see CHANGES-SEIHAI.md.
 /*
  * include/IUtil.cpp
  *
@@ -331,25 +331,31 @@ int getVersionID(const CString& version)
 
 const char* getVersionString(const CString& version, const int type)
 {
-    int i = 0;
-    while (clientVersions[i] != nullptr)
+    const char* const* versions = nullptr;
+    const char* const* labels = nullptr;
+    if ((type & PLTYPE_ANYCLIENT) != 0 || (type & PLTYPE_NPCSERVER) != 0)
     {
-        if ((type & PLTYPE_ANYCLIENT) != 0 || (type & PLTYPE_NPCSERVER) != 0)
+        versions = clientVersions;
+        labels = clientVersionString;
+    }
+    else if ((type & PLTYPE_ANYRC) != 0)
+    {
+        versions = rcVersions;
+        labels = rcVersionString;
+    }
+    else if ((type & PLTYPE_ANYNC) != 0)
+    {
+        versions = ncVersions;
+        labels = ncVersionString;
+    }
+
+    if (versions != nullptr)
+    {
+        for (int i = 0; versions[i] != nullptr; ++i)
         {
-            if (version == CString(clientVersions[i]))
-                return clientVersionString[i];
+            if (version == CString(versions[i]))
+                return labels[i];
         }
-        else if ((type & PLTYPE_ANYRC) != 0)
-        {
-            if (version == CString(rcVersions[i]))
-                return rcVersionString[i];
-        }
-        else if ((type & PLTYPE_ANYNC) != 0)
-        {
-            if (version == CString(ncVersions[i]))
-                return ncVersionString[i];
-        }
-        ++i;
     }
     // Seihai lab patch: an unknown token used to return nullptr, which the
     // login log line ("Version: %s (%s)") and the allowed-versions string
