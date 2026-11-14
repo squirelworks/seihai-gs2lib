@@ -6,6 +6,13 @@ Mirror of [gs2lib](https://bitbucket.org/xtjoeytx/gs2lib) (GPL-3.0, see `LICENSE
 pins since 2026-11-11). Used by
 [seihai-gserver-v2](https://github.com/squirelworks/seihai-gserver-v2).
 
+## 2026-11-15
+
+| Change | Files | Checked with |
+|---|---|---|
+| Explain the generation-table clamp: what `setGen` stored, how `reset` indexed the iterator table, what the patch changes, how `GenerationBoundsTest` was run, and which neighbouring fixes stay in their own pull requests. Documentation only. | `docs/generation-bounds.md`, `CHANGES-SEIHAI.md` | Read against `include/CEncryption.h`, `src/CEncryption.cpp`, `tests/GenerationBoundsTest.cpp`, and the bounds row below. No new build. |
+| `CEncryption::setGen` clamps a generation to the iterator table (`0` through `ENCRYPT_GEN_6`). The previous upper bound was one past that six-entry table, so an out-of-range generation stored an index `reset` then read past the table. `reset` now folds a stored generation back into the table before that read. Named generations are unchanged. This is a bounds fix in this library. Remote reachability was not established and is not claimed. | `include/CEncryption.h`, `src/CEncryption.cpp`, `tests/GenerationBoundsTest.cpp`, `CMakeLists.txt` | `GenerationBoundsTest`, an in-process codec test with no socket. Against the previous `setGen`, eight checks fail (exit 1). The same test built from those sources with GCC ASan/UBSan stops in `reset` on a read past the iterator table. With the fix, generations `0` through `ENCRYPT_GEN_6` stay put, and `ENCRYPT_GEN_6 + 1`, `+ 2`, `64` and the maximum `uint32_t` clamp to `ENCRYPT_GEN_6` before and after `reset`; that ASan/UBSan run exits 0. Full local CTest: 6/6 pass. |
+
 ## 2026-11-14
 
 | Change | Files | Checked with |

@@ -1,4 +1,4 @@
-# Modified by the Seihai project, 2026-11-07, 2026-11-14: see CHANGES-SEIHAI.md.
+# Modified by the Seihai project, 2026-11-07, 2026-11-14, 2026-11-15: see CHANGES-SEIHAI.md.
 #
 #  CMakeLists.txt
 #
@@ -251,6 +251,11 @@ if(GS2LIB_TESTS AND NET)
 	target_link_libraries(Gen5StepsTest PRIVATE ${TARGET_NAME})
 	set_target_properties(Gen5StepsTest PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR})
 	add_test(NAME Gen5StepsTest COMMAND Gen5StepsTest)
+
+	add_executable(GenerationBoundsTest tests/GenerationBoundsTest.cpp)
+	target_link_libraries(GenerationBoundsTest PRIVATE ${TARGET_NAME})
+	set_target_properties(GenerationBoundsTest PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR})
+	add_test(NAME GenerationBoundsTest COMMAND GenerationBoundsTest)
 
 	add_executable(PacketNamesTest tests/PacketNamesTest.cpp)
 	target_include_directories(PacketNamesTest PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)

@@ -1,4 +1,4 @@
-// Modified by the Seihai project, 2026-10-31, 2026-11-13: see CHANGES-SEIHAI.md.
+// Modified by the Seihai project, 2026-10-31, 2026-11-13, 2026-11-15: see CHANGES-SEIHAI.md.
 /*
  * include/CEncryption.cpp
  *
@@ -25,6 +25,15 @@
 
 static constexpr std::array ITERATOR_START = {0U, 0U, 0x04A80B38U, 0x4A80B38U, 0x4A80B38U, 0U};
 
+// One entry per generation, indexes 0 through ENCRYPT_GEN_6.
+static_assert(ITERATOR_START.size() == static_cast<std::size_t>(ENCRYPT_GEN_6) + 1U);
+
+static uint32_t generationInTable(const uint32_t gen)
+{
+    const auto last = static_cast<uint32_t>(ITERATOR_START.size() - 1U);
+    return gen > last ? last : gen;
+}
+
 CEncryption::CEncryption()
     : m_key(0), m_limit(-1), m_gen(ENCRYPT_GEN_3)
 {
@@ -34,6 +43,7 @@ CEncryption::CEncryption()
 void CEncryption::reset(const uint8_t key)
 {
     m_key = key;
+    m_gen = generationInTable(m_gen);
     m_lastIterator = m_iterator = ITERATOR_START[m_gen];
     m_limit = -1;
 }
