@@ -1,4 +1,4 @@
-# Modified by the Seihai project, 2026-11-07: see CHANGES-SEIHAI.md.
+# Modified by the Seihai project, 2026-11-07, 2026-11-14: see CHANGES-SEIHAI.md.
 #
 #  CMakeLists.txt
 #
@@ -261,6 +261,12 @@ if(GS2LIB_TESTS AND NET)
 	target_link_libraries(VersionLabelTest PRIVATE ${TARGET_NAME})
 	set_target_properties(VersionLabelTest PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR})
 	add_test(NAME VersionLabelTest COMMAND VersionLabelTest)
+
+	add_executable(SocketFamilyTest tests/SocketFamilyTest.cpp)
+	target_link_libraries(SocketFamilyTest PRIVATE ${TARGET_NAME})
+	set_target_properties(SocketFamilyTest PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR})
+	add_test(NAME SocketFamilyTest COMMAND SocketFamilyTest)
+	set_tests_properties(SocketFamilyTest PROPERTIES TIMEOUT 15)
 endif()
 
 # Packaging

@@ -1,4 +1,4 @@
-// Modified by the Seihai project, 2026-11-01: see CHANGES-SEIHAI.md.
+// Modified by the Seihai project, 2026-11-01, 2026-11-14: see CHANGES-SEIHAI.md.
 /*
  * include/CSocket.cpp
  *
@@ -527,11 +527,11 @@ int CSocket::connect()
 	// Flag the socket as connecting.
 	properties.state = SOCKET_STATE_CONNECTING;
 
-	// Create socket.
+	// Use the address family selected by init(), including IPv6/ANY results.
 	if (properties.protocol == SOCKET_PROTOCOL_TCP)
-		properties.handle = socket(AF_INET, SOCK_STREAM, 0);
+		properties.handle = socket(properties.address.ss_family, SOCK_STREAM, 0);
 	else
-		properties.handle = socket(AF_INET, SOCK_DGRAM, 0);
+		properties.handle = socket(properties.address.ss_family, SOCK_DGRAM, 0);
 
 	// Make sure the socket was created correctly.
 	if (properties.handle == INVALID_SOCKET)
