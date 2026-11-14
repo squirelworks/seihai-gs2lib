@@ -1,4 +1,4 @@
-﻿// Modified by the Seihai project, 2026-10-31: see CHANGES-SEIHAI.md.
+﻿// Modified by the Seihai project, 2026-10-31, 2026-11-15: see CHANGES-SEIHAI.md.
 /*
  * include/CEncryption.h
  *
@@ -97,7 +97,8 @@ private:
 
 inline void CEncryption::setGen(const uint32_t gen)
 {
-    m_gen = std::clamp(gen, 0U, 6U);
+    // Generations are indexes into the iterator table, 0 through ENCRYPT_GEN_6.
+    m_gen = std::clamp(gen, 0U, static_cast<uint32_t>(ENCRYPT_GEN_6));
 }
 
 inline uint32_t CEncryption::getGen() const noexcept
