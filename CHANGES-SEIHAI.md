@@ -6,6 +6,12 @@ Mirror of [gs2lib](https://bitbucket.org/xtjoeytx/gs2lib) (GPL-3.0, see `LICENSE
 pins since 2026-11-11). Used by
 [seihai-gserver-v2](https://github.com/squirelworks/seihai-gserver-v2).
 
+## 2026-11-14
+
+| Change | Files | Checked with |
+|---|---|---|
+| GraalOnline Classic+ 1.13 for iPhone gets a version id: `G3D0208A` is `CLVER_IPHONE_CLASSICPLUS_1_13` ("iPhone Classic+ 1.13"). It sits between `CLVER_IPHONE_1_11` and `CLVER_IPHONE_BELOTE_1_5`, so a range such as `1.41r1 - iPhone Belote 1.5` admits it. Before, it was `CLVER_UNKNOWN`. The token was read from the app's decrypted IPA (Graal_analysis `client-internals/iphone-version-tokens.md`, grade B). A comment notes that `G3D04048` (upstream's "iPhone 1.1") is what Belote 1.2 and 1.50 send. Upstream labels are unchanged. **Consumers:** the ids of `CLVER_IPHONE_BELOTE_1_5` and `CLVER_WORLDS` move up by one; code that names them is unaffected. | `include/IUtil.h`, `src/IUtil.cpp`, `tests/VersionLabelTest.cpp` | `VersionLabelTest` (token, id, label and enum order); local build with `-DGS2LIB_TESTS=ON`, all three tests pass |
+
 ## 2026-11-13
 
 | Change | Files | Checked with |

@@ -143,9 +143,10 @@ static constexpr const char* const clientVersions[] =
 	"G3D0311C",		// CLVER_6_037,
 	"G3D0511C",		// CLVER_6_037_LINUX,
 
-	"G3D04048",		// CLVER_IPHONE_1_1
+	"G3D04048",		// CLVER_IPHONE_1_1 (Seihai: Belote 1.2 and 1.50 send this)
 	"G3D18010",		// CLVER_IPHONE_1_5
 	"G3D29090",		// CLVER_IPHONE_1_11
+	"G3D0208A",		// CLVER_IPHONE_CLASSICPLUS_1_13, Seihai
 	"G3D2504D",		// CLVER_IPHONE_BELOTE_1_5
 	"G3D2204D",		// CLVER_WORLDS
 
@@ -280,6 +281,7 @@ static constexpr const char* const clientVersionString[] =
 	"iPhone 1.1",	// CLVER_IPHONE_1_1
 	"iPhone 1.5",	// CLVER_IPHONE_1_5
 	"iPhone 1.11",	// CLVER_IPHONE_1_11
+	"iPhone Classic+ 1.13",	// CLVER_IPHONE_CLASSICPLUS_1_13, Seihai
 	"iPhone Belote 1.5", //CLVER_IPHONE_BELOTE_1_5
 	"Graal Worlds", // CLVER_WORLDS
 
