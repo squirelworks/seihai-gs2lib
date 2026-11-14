@@ -1,4 +1,4 @@
-// Modified by the Seihai project, 2026-11-01, 2026-11-12: see CHANGES-SEIHAI.md.
+// Modified by the Seihai project, 2026-11-01, 2026-11-12, 2026-11-14: see CHANGES-SEIHAI.md.
 /*
  * include/CFileQueue.cpp
  *
@@ -71,7 +71,7 @@ void CFileQueue::clearBuffers()
 
 bool CFileQueue::canSend() const
 {
-    if (!m_normalBuffer.empty() || !m_fileBuffer.empty())
+    if (!m_sendBuffer.isEmpty() || !m_normalBuffer.empty() || !m_fileBuffer.empty())
         return true;
     return false;
 }
@@ -83,6 +83,23 @@ void CFileQueue::sendCompress(const bool forceSendFiles)
 
     if (m_socket == nullptr || m_socket->getState() == SOCKET_STATE_DISCONNECTED)
         return;
+
+    auto sendBuffered = [this]()
+    {
+        unsigned int remaining = m_sendBuffer.length();
+        const int sent = m_socket->sendData(m_sendBuffer.text(), &remaining);
+        if (sent > 0)
+            m_sendBuffer.removeI(0, sent);
+    };
+
+    // Retry already encoded bytes before building another frame. A blocked
+    // write must not require new packets, reframe data, or advance the cipher.
+    // One attempt per call also leaves retry scheduling to the socket manager.
+    if (!m_sendBuffer.isEmpty())
+    {
+        sendBuffered();
+        return;
+    }
 
     auto addPacket = [this](const std::pair<bool, CString>& packet)
     {
@@ -167,8 +184,7 @@ void CFileQueue::sendCompress(const bool forceSendFiles)
                 webSocketFixOutgoingPacket(m_sendBuffer);
 
             // Send.
-            unsigned int dsize = m_sendBuffer.length();
-            m_sendBuffer.removeI(0, m_socket->sendData(m_sendBuffer.text(), &dsize));
+            sendBuffered();
             break;
         }
 
@@ -192,8 +208,7 @@ void CFileQueue::sendCompress(const bool forceSendFiles)
                 webSocketFixOutgoingPacket(m_sendBuffer);
 
             // Send.
-            unsigned int dsize = m_sendBuffer.length();
-            m_sendBuffer.removeI(0, m_socket->sendData(m_sendBuffer.text(), &dsize));
+            sendBuffered();
             break;
         }
 
@@ -217,8 +232,7 @@ void CFileQueue::sendCompress(const bool forceSendFiles)
                 webSocketFixOutgoingPacket(m_sendBuffer);
 
             // Send.
-            unsigned int dsize = m_sendBuffer.length();
-            m_sendBuffer.removeI(0, m_socket->sendData(m_sendBuffer.text(), &dsize));
+            sendBuffered();
             break;
         }
 
@@ -259,8 +273,7 @@ void CFileQueue::sendCompress(const bool forceSendFiles)
                 webSocketFixOutgoingPacket(m_sendBuffer);
 
             // Send.
-            unsigned int dsize = m_sendBuffer.length();
-            m_sendBuffer.removeI(0, m_socket->sendData(m_sendBuffer.text(), &dsize));
+            sendBuffered();
             break;
         }
     }

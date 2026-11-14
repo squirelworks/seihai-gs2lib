@@ -267,6 +267,19 @@ if(GS2LIB_TESTS AND NET)
 	set_target_properties(SocketFamilyTest PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR})
 	add_test(NAME SocketFamilyTest COMMAND SocketFamilyTest)
 	set_tests_properties(SocketFamilyTest PROPERTIES TIMEOUT 15)
+
+	# Link the real queue/string/codec/util sources with a controlled socket
+	# transport instead of CSocket.cpp, independently of static/shared builds.
+	add_executable(FileQueueSendTest tests/FileQueueSendTest.cpp
+		src/CFileQueue.cpp src/CString.cpp src/CEncryption.cpp src/IUtil.cpp)
+	target_include_directories(FileQueueSendTest PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)
+	target_link_libraries(FileQueueSendTest PRIVATE BZip2::BZip2 ZLIB::ZLIB)
+	if(WIN32)
+		target_link_libraries(FileQueueSendTest PRIVATE ws2_32)
+	endif()
+	set_target_properties(FileQueueSendTest PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR})
+	add_test(NAME FileQueueSendTest COMMAND FileQueueSendTest)
+	set_tests_properties(FileQueueSendTest PROPERTIES TIMEOUT 15)
 endif()
 
 # Packaging
