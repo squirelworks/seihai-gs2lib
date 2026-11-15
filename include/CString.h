@@ -1,3 +1,4 @@
+// Modified by the Seihai project, 2026-11-15: see CHANGES-SEIHAI.md.
 /*
  * include/CString.h
  *
@@ -430,7 +431,10 @@ inline void CString::setRead(int pRead)
 
 inline void CString::setSize(int pSize)
 {
-	sizec = std::max(0, pSize);
+	// sizec is the count of bytes read back. One slot stays for the terminator
+	// that text() callers expect inside the allocation.
+	const int cap = buffc > 0 ? buffc - 1 : 0;
+	sizec = std::clamp(pSize, 0, cap);
 	readc = std::min(readc, sizec);
 	writec = std::min(writec, sizec);
 }

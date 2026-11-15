@@ -285,6 +285,12 @@ if(GS2LIB_TESTS AND NET)
 	set_target_properties(FileQueueSendTest PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR})
 	add_test(NAME FileQueueSendTest COMMAND FileQueueSendTest)
 	set_tests_properties(FileQueueSendTest PROPERTIES TIMEOUT 15)
+
+	add_executable(ParseBoundsTest tests/ParseBoundsTest.cpp)
+	target_link_libraries(ParseBoundsTest PRIVATE ${TARGET_NAME})
+	set_target_properties(ParseBoundsTest PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR})
+	add_test(NAME ParseBoundsTest COMMAND ParseBoundsTest)
+	set_tests_properties(ParseBoundsTest PROPERTIES TIMEOUT 15)
 endif()
 
 # Packaging
