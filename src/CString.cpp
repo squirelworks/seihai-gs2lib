@@ -1,3 +1,4 @@
+// Modified by the Seihai project, 2026-11-15: see CHANGES-SEIHAI.md.
 /*
  * include/CString.cpp
  *
@@ -292,6 +293,9 @@ CString CString::readString(const CString& pString)
 
 int CString::read(char *pDest, int pSize)
 {
+	if (pSize <= 0)
+		return 0;
+
 	int length = (sizec - readc < pSize ? sizec - readc : pSize);
 	if (length <= 0)
 	{
@@ -305,7 +309,7 @@ int CString::read(char *pDest, int pSize)
 
 int CString::write(unsigned char *pSrc, int pSize, bool nullTerminate)
 {
-	if (!pSize)
+	if (pSize <= 0)
 		return 0;
 
 	if (writec + pSize >= buffc)
@@ -323,7 +327,7 @@ int CString::write(unsigned char *pSrc, int pSize, bool nullTerminate)
 
 int CString::write(const char *pSrc, int pSize, bool nullTerminate)
 {
-	if (!pSize)
+	if (pSize <= 0)
 		return 0;
 
 	if (writec + pSize >= buffc)
@@ -443,6 +447,10 @@ CString CString::left(int pLength) const
 
 CString CString::right(int pLength) const
 {
+	if (pLength < 0)
+		return CString();
+	if (pLength > length())
+		pLength = length();
 	return subString(length() - pLength, pLength);
 }
 
@@ -627,10 +635,14 @@ CString CString::rc4_decrypt(const char * key, int keylen) const
 CString CString::encodesimple(unsigned int buffSize) const
 {
 	CString retVal;
-	char* buf = new char[buffSize];
-	memset((void*)buf, 0, buffSize);
+	const unsigned int available = length() > 0 ? static_cast<unsigned int>(length()) : 0u;
+	const unsigned int clen = std::min(buffSize, available);
+	if (clen == 0)
+		return retVal;
+
+	char* buf = new char[clen];
+	memset((void*)buf, 0, clen);
 	int error = 0;
-	unsigned int clen = buffSize;
 
 	int i = 0;
 
@@ -649,10 +661,14 @@ CString CString::encodesimple(unsigned int buffSize) const
 CString CString::decodesimple(unsigned int buffSize, bool includeNullTermination) const
 {
 	CString retVal;
-	char* buf = new char[buffSize];
-	memset((void*)buf, 0, buffSize);
+	const unsigned int available = length() > 0 ? static_cast<unsigned int>(length()) : 0u;
+	const unsigned int clen = std::min(buffSize, available);
+	if (clen == 0)
+		return retVal;
+
+	char* buf = new char[clen];
+	memset((void*)buf, 0, clen);
 	int error = 0;
-	unsigned int clen = buffSize;
 
 	int i = 0;
 	int c = 0;
@@ -677,11 +693,15 @@ CString CString::decodesimple(unsigned int buffSize, bool includeNullTermination
 CString CString::codesimplefix0(unsigned int buffSize) const
 {
 	CString retVal;
-	char* buf = new char[buffSize];
+	const unsigned int available = length() > 0 ? static_cast<unsigned int>(length()) : 0u;
+	const unsigned int clen = std::min(buffSize, available);
+	if (clen == 0)
+		return retVal;
+
+	char* buf = new char[clen];
 	//memset((void*)buf, 0, buffSize);
-	memcpy(buf, buffer, buffSize);
+	memcpy(buf, buffer, clen);
 	int error = 0;
-	unsigned int clen = buffSize;
 
 
 
@@ -728,13 +748,13 @@ CString CString::base64encode() const
 			'4', '5', '6', '7', '8', '9', '+', '/'
 	};
 
-	size_t in_len = length();
+	size_t in_len = length() > 0 ? static_cast<size_t>(length()) : 0;
 	size_t out_len = 4 * ((in_len + 2) / 3);
 	std::string ret(out_len, '\0');
 	size_t i;
 	char *p = const_cast<char*>(ret.c_str());
 
-	for (i = 0; i < in_len - 2; i += 3) {
+	for (i = 0; i + 2 < in_len; i += 3) {
 		*p++ = sEncodingTable[(buffer[i] >> 2) & 0x3F];
 		*p++ = sEncodingTable[((buffer[i] & 0x3) << 4) | ((int) (buffer[i + 1] & 0xF0) >> 4)];
 		*p++ = sEncodingTable[((buffer[i + 1] & 0xF) << 2) | ((int) (buffer[i + 2] & 0xC0) >> 6)];
@@ -762,8 +782,13 @@ CString CString::base64encode() const
 
 CString CString::base64decode() const
 {
+	if (length() <= 0)
+		return CString();
+
     /* Check if last byte is null terminator */
 	int in_len = buffer[length() - 1] == 0 ? length() - 1 : length();
+	if (in_len <= 0)
+		return *this;
 
 	CString retVal = CString("");
 
@@ -797,10 +822,10 @@ CString CString::base64decode() const
 	out.resize(out_len);
 
 	for (size_t i = 0, j = 0; i < in_len;) {
-		uint32_t a = buffer[i] == '=' ? 0 & i++ : kDecodingTable[static_cast<int>(buffer[i++])];
-		uint32_t b = buffer[i] == '=' ? 0 & i++ : kDecodingTable[static_cast<int>(buffer[i++])];
-		uint32_t c = buffer[i] == '=' ? 0 & i++ : kDecodingTable[static_cast<int>(buffer[i++])];
-		uint32_t d = buffer[i] == '=' ? 0 & i++ : kDecodingTable[static_cast<int>(buffer[i++])];
+		uint32_t a = buffer[i] == '=' ? 0 & i++ : kDecodingTable[static_cast<unsigned char>(buffer[i++])];
+		uint32_t b = buffer[i] == '=' ? 0 & i++ : kDecodingTable[static_cast<unsigned char>(buffer[i++])];
+		uint32_t c = buffer[i] == '=' ? 0 & i++ : kDecodingTable[static_cast<unsigned char>(buffer[i++])];
+		uint32_t d = buffer[i] == '=' ? 0 & i++ : kDecodingTable[static_cast<unsigned char>(buffer[i++])];
 
 		uint32_t triple = (a << 3 * 6) + (b << 2 * 6) + (c << 1 * 6) + (d << 0 * 6);
 
@@ -946,13 +971,15 @@ CString CString::zuncompress2(bool& usedDeflate, const unsigned int buffSize) co
 		// Try DEFLATE directly.
 		// This is a workaround for a 2.x client bug with its ancient version of zlib.
 		// For some reason, the 2.x client generates an invalid Adler-32 checksum in certain situations.
-		if (error == Z_DATA_ERROR && buffSize > 6)
+		// length() - 2 is the source size. Below 2 that subtraction wraps
+		// and inflate reads off the end of the buffer.
+		if (error == Z_DATA_ERROR && buffSize > 6 && length() >= 2)
 		{
 			// Strip off the header and trailer bytes (first 2 bytes and last 4 bytes) and try again.
 			const auto source = reinterpret_cast<const Bytef*>(buffer) + 2;
 			clen = buffSize - 6;
 			buf[0] = '\0';
-			error = deflate_rfc1951(reinterpret_cast<Bytef *>(buf), &clen, source, length() - 2);
+			error = deflate_rfc1951(reinterpret_cast<Bytef *>(buf), &clen, source, static_cast<uLong>(length() - 2));
 			if (error == Z_OK)
 				usedDeflate = true;
 		}
@@ -987,6 +1014,8 @@ int CString::find(const CString& pString, int pStart) const
 {
 	const char* obuffer = pString.text();
 	const int olen = pString.length();
+	if (pStart < 0)
+		pStart = 0;
 	for (auto i = pStart; i <= sizec - olen; ++i)
 	{
 		if (buffer[i] == 0)
@@ -1004,6 +1033,8 @@ int CString::find(const std::string_view& pString, int pStart) const
 {
 	const char* obuffer = pString.data();
 	const int olen = pString.length();
+	if (pStart < 0)
+		pStart = 0;
 	for (auto i = pStart; i <= sizec - olen; ++i)
 	{
 		if (buffer[i] == 0)
@@ -1021,6 +1052,8 @@ int CString::find(const char* pString, int pStart) const
 {
 	const char* obuffer = pString;
 	const int olen = strlen(pString);
+	if (pStart < 0)
+		pStart = 0;
 	for (auto i = pStart; i <= sizec - olen; ++i)
 	{
 		if (buffer[i] == 0)
@@ -1036,6 +1069,8 @@ int CString::find(const char* pString, int pStart) const
 
 int CString::findi(const CString& pString, int pStart) const
 {
+	if (pStart < 0)
+		pStart = 0;
 	for (auto i = pStart; i <= length() - pString.length(); ++i)
 	{
 		if (strncasecmp(&buffer[i], pString.text(), pString.length()) == 0)
@@ -1046,6 +1081,8 @@ int CString::findi(const CString& pString, int pStart) const
 
 int CString::findi(const std::string_view& pString, int pStart) const
 {
+	if (pStart < 0)
+		pStart = 0;
 	for (auto i = pStart; i <= length() - pString.length(); ++i)
 	{
 		if (strncasecmp(&buffer[i], pString.data(), pString.length()) == 0)
@@ -1057,6 +1094,8 @@ int CString::findi(const std::string_view& pString, int pStart) const
 int CString::findi(const char* pString, int pStart) const
 {
 	auto len = strlen(pString);
+	if (pStart < 0)
+		pStart = 0;
 	for (auto i = pStart; i <= length() - len; ++i)
 	{
 		if (strncasecmp(&buffer[i], pString, len) == 0)
@@ -1180,6 +1219,11 @@ std::vector<CString> CString::loadToken(const CString& pFile, const CString& pTo
 
 CString CString::replaceAll(const CString& pString, const CString& pNewString) const
 {
+	// An empty needle matches at every index, including the index the
+	// replacement just grew to, so the loop never finishes.
+	if (pString.isEmpty())
+		return *this;
+
 	CString retVal(*this);
 	int pos = 0;
 	int len = pString.length();
@@ -1206,6 +1250,9 @@ CString CString::gtokenize() const
 	CString self(*this);
 	CString retVal;
 	int pos[] = {0, 0};
+
+	if (length() <= 0)
+		return retVal;
 
 	// Add a trailing \n to the line if one doesn't already exist.
 	if (buffer[sizec - 1] != '\n') self.writeChar('\n');

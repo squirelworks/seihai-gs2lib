@@ -1,4 +1,4 @@
-// Modified by the Seihai project, 2026-10-31 (5.007 label 2026-11-12, Mac ids and catalogue tokens 2026-11-13, RC/NC bounds 2026-11-14): see CHANGES-SEIHAI.md.
+// Modified by the Seihai project, 2026-10-31 (5.007 label 2026-11-12, Mac ids and catalogue tokens 2026-11-13, RC/NC bounds 2026-11-14, frame lengths 2026-11-15): see CHANGES-SEIHAI.md.
 /*
  * include/IUtil.cpp
  *
@@ -445,13 +445,15 @@ CString removeExtension(const CString& file)
 
 unsigned int webSocketFixOutgoingPacket(CString& packetData)
 {
-    auto* message = new unsigned char[65535 * sizeof(char)];
+    const int payload = std::max(packetData.length(), 0);
+    const int header = payload <= 125 ? 2 : payload <= 65535 ? 4 : 10;
+    auto* message = new unsigned char[static_cast<size_t>(payload) + static_cast<size_t>(header)];
     int i;
     int data_start_index;
 
     message[0] = 130;
 
-    if (packetData.length() <= 125)
+    if (payload <= 125)
     {
         message[1] = (unsigned char)packetData.length();
         data_start_index = 2;
@@ -564,39 +566,28 @@ unsigned int webSocketFixIncomingPacket(CString& packetData)
         return -1;
     }
 
-    length_code = bytes[1] & 127;
+    if (packetData.length() < 2)
+        return static_cast<unsigned int>(-1);
+
+    length_code = static_cast<unsigned char>(bytes[1]) & 127;
 
     if (length_code <= 125)
-    {
         index_first_mask = 2;
-
-        mask[0] = bytes[2];
-        mask[1] = bytes[3];
-        mask[2] = bytes[4];
-        mask[3] = bytes[5];
-    }
     else if (length_code == 126)
-    {
         index_first_mask = 4;
-
-        mask[0] = bytes[4];
-        mask[1] = bytes[5];
-        mask[2] = bytes[6];
-        mask[3] = bytes[7];
-    }
-    else if (length_code == 127)
-    {
+    else
         index_first_mask = 10;
 
-        mask[0] = bytes[10];
-        mask[1] = bytes[11];
-        mask[2] = bytes[12];
-        mask[3] = bytes[13];
-    }
-
     index_first_data_byte = index_first_mask + 4;
+    if (packetData.length() < index_first_data_byte)
+        return static_cast<unsigned int>(-1);
 
-    packet_length = packetData.length() - index_first_data_byte;
+    mask[0] = static_cast<unsigned char>(bytes[index_first_mask]);
+    mask[1] = static_cast<unsigned char>(bytes[index_first_mask + 1]);
+    mask[2] = static_cast<unsigned char>(bytes[index_first_mask + 2]);
+    mask[3] = static_cast<unsigned char>(bytes[index_first_mask + 3]);
+
+    packet_length = static_cast<unsigned int>(packetData.length() - index_first_data_byte);
 
     auto* dst = new unsigned char[packet_length];
 
