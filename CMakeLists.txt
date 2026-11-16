@@ -1,4 +1,4 @@
-# Modified by the Seihai project, 2026-11-07, 2026-11-14, 2026-11-15: see CHANGES-SEIHAI.md.
+# Modified by the Seihai project, 2026-11-07, 2026-11-14, 2026-11-15, 2026-11-16: see CHANGES-SEIHAI.md.
 #
 #  CMakeLists.txt
 #
@@ -291,6 +291,22 @@ if(GS2LIB_TESTS AND NET)
 	set_target_properties(ParseBoundsTest PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR})
 	add_test(NAME ParseBoundsTest COMMAND ParseBoundsTest)
 	set_tests_properties(ParseBoundsTest PROPERTIES TIMEOUT 15)
+endif()
+
+# Seihai: libFuzzer harnesses (#27). Off by default; needs Clang.
+option(GS2LIB_FUZZ "Build libFuzzer targets for framing, ciphers and decompression." OFF)
+if(GS2LIB_FUZZ)
+	if(NOT CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+		message(FATAL_ERROR "GS2LIB_FUZZ requires Clang (libFuzzer).")
+	endif()
+	set(_gs2lib_fuzz_sanitize "-fsanitize=fuzzer,address,undefined")
+	foreach(_fuzz_target IN ITEMS fuzz_decrypt fuzz_decompress fuzz_version fuzz_frame)
+		add_executable(${_fuzz_target} fuzz/${_fuzz_target}.cpp)
+		target_link_libraries(${_fuzz_target} PRIVATE ${TARGET_NAME})
+		target_compile_options(${_fuzz_target} PRIVATE ${_gs2lib_fuzz_sanitize})
+		target_link_options(${_fuzz_target} PRIVATE ${_gs2lib_fuzz_sanitize})
+		set_target_properties(${_fuzz_target} PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR})
+	endforeach()
 endif()
 
 # Packaging

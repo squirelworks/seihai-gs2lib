@@ -6,6 +6,12 @@ Mirror of [gs2lib](https://bitbucket.org/xtjoeytx/gs2lib) (GPL-3.0, see `LICENSE
 pins since 2026-11-11). Used by
 [seihai-gserver-v2](https://github.com/squirelworks/seihai-gserver-v2).
 
+## 2026-11-16
+
+| Change | Files | Checked with |
+|---|---|---|
+| Add Clang libFuzzer harnesses behind `-DGS2LIB_FUZZ=ON` for cipher decrypt across generations, zlib/bzip2 uncompress, version-token lookup, and length-prefixed receive framing, with fixture seeds and a weekly Linux ASan/UBSan workflow. Default and `GS2LIB_TESTS` builds are unchanged. #27 stays open for longer runs and turning crashers into unit tests. | `fuzz/`, `CMakeLists.txt`, `.github/workflows/fuzz.yml`, `README.md`, `docs/ROADMAP.md`, `CHANGES-SEIHAI.md` | Local `CC=clang-18 CXX=clang++-18 cmake … -DGS2LIB_FUZZ=ON` build; each target run with `-max_total_time=5` on its seed corpus exits 0. `GS2LIB_TESTS=ON` still builds unit tests only; `ParseBoundsTest` and `GenerationBoundsTest` pass. |
+
 ## 2026-11-15
 
 | Change | Files | Checked with |
