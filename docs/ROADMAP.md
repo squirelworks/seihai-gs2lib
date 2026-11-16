@@ -7,7 +7,7 @@ against branch `seihai`.
 
 ## Phase 1: to functional (current priority: bugs and crashes)
 
-- [ ] Fuzz the framing, cipher and decompression paths under sanitizers (#27); each crasher gets a unit test and a fix.
+- [ ] Fuzz the framing, cipher and decompression paths under sanitizers (#27); scaffold and weekly smoke are in, longer runs and crasher→unit-test still open.
 - [ ] New client tokens as real builds turn up that upstream refuses (as 3.153 and iPhone Classic+ 1.13 were).
 - [ ] Comments beside upstream's `UNHANDLED`/`UNKNOWN` names when Graal_analysis settles an id (squirelworks/Graal_analysis#254).
 

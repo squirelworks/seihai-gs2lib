@@ -1,0 +1,4 @@
+# Grown corpora and libFuzzer crash dumps stay local.
+crash-*
+leak-*
+timeout-*

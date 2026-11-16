@@ -1,4 +1,4 @@
-<!-- Modified by the Seihai project, 2026-11-11, 2026-11-14 (README rewritten 2026-11-13): see CHANGES-SEIHAI.md. -->
+<!-- Modified by the Seihai project, 2026-11-11, 2026-11-14 (README rewritten 2026-11-13), 2026-11-16: see CHANGES-SEIHAI.md. -->
 # seihai-gs2lib
 
 The Seihai fork of [gs2lib](https://bitbucket.org/xtjoeytx/gs2lib), the C++
@@ -64,6 +64,10 @@ ctest --test-dir build --output-on-failure
 
 GitHub CI builds and runs the tests on Linux and Windows
 (`.github/workflows/seihai-tests.yml`).
+
+libFuzzer harnesses for framing, ciphers and decompression are off by
+default (`-DGS2LIB_FUZZ=ON`, Clang only). See `fuzz/README.md` and the
+weekly `.github/workflows/fuzz.yml` job (#27).
 
 ### macOS builds
 

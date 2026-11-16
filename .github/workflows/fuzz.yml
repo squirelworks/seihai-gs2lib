@@ -1,0 +1,49 @@
+# Modified by the Seihai project, 2026-11-16: see CHANGES-SEIHAI.md.
+# Weekly libFuzzer smoke for #27. Not part of the default seihai-tests matrix.
+name: fuzz
+
+on:
+  schedule:
+    - cron: '23 5 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  fuzz:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install build tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang-18 libclang-rt-18-dev libfuzzer-18-dev \
+            ninja-build zlib1g-dev libbz2-dev
+      - name: Configure
+        run: |
+          CC=clang-18 CXX=clang++-18 cmake -S . -B build-fuzz -G Ninja \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DGS2LIB_FUZZ=ON -DGS2LIB_TESTS=OFF -DSTATIC=ON -DNET=ON
+      - name: Build
+        run: cmake --build build-fuzz -j
+      - name: Run each target briefly
+        run: |
+          set -euo pipefail
+          for t in fuzz_decrypt fuzz_decompress fuzz_version fuzz_frame; do
+            echo "::group::$t"
+            corp="fuzz/corpus/${t#fuzz_}"
+            ./build-fuzz/"$t" -max_total_time=120 -max_len=65536 "$corp"
+            echo "::endgroup::"
+          done
+      - name: Upload crashers
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: fuzz-crashers
+          path: |
+            crash-*
+            leak-*
+            timeout-*
+          if-no-files-found: ignore
