@@ -2,7 +2,7 @@
 
 The live checklist is issue #11; the suite-wide plan is squirelworks/seihai#353.
 This library is used only by seihai-gserver-v2, so the roadmap stays short:
-stay close to upstream and keep each change tested. Last checked 2026-11-15
+stay close to upstream and keep each change tested. Last checked 2026-11-16
 against branch `seihai`.
 
 ## Phase 1: to functional (current priority: bugs and crashes)
@@ -15,7 +15,7 @@ against branch `seihai`.
 
 - [ ] macOS build and tests at release time only (#28).
 - [ ] Follow upstream: merge it into `seihai`, keep each Seihai row, bump the pin in seihai-gserver-v2 in the same round; fast-forward `master` to upstream's head.
-- [ ] Offer the crash and socket fixes upstream if the owner agrees (#10), which shrinks the fork.
+- [x] Offer the crash and socket fixes upstream if the owner agrees (#10), which shrinks the fork.
 
 ## Phase 3: after it works
 
