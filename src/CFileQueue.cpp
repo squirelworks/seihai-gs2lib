@@ -78,7 +78,7 @@ void CFileQueue::clearBuffers()
 
 bool CFileQueue::canSend() const
 {
-    if (!m_normalBuffer.empty() || !m_fileBuffer.empty())
+    if (!m_normalBuffer.empty() || !m_fileBuffer.empty() || !m_sendBuffer.isEmpty())
         return true;
     return false;
 }
