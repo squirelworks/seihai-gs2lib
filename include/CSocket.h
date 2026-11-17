@@ -89,13 +89,13 @@ class CSocketManager
 {
 public:
 	//! Constructor.
-	CSocketManager() : fd_max(0) {}
+	CSocketManager() = default;
 
 	//! Updates the state of the sockets.
 	//! Calls the functions of all the registered CSocketStub classes.
 	//! \param sec Seconds to wait.
 	//! \param usec Nanoseconds to wait.
-	//! \return False if select() returned nothing, true otherwise.
+	//! \return False if the wait was interrupted with nothing ready, true otherwise.
 	bool update(long sec = 0, long usec = 0);
 
 	//! Updates a single socket.
@@ -105,7 +105,7 @@ public:
 	//! \param pWrite Write to the socket.
 	//! \param sec Seconds to wait.
 	//! \param usec Nanoseconds to wait.
-	//! \return False if select() returned nothing, true otherwise.
+	//! \return False if the stub is gone or its socket is closed, true otherwise.
 	bool updateSingle(CSocketStub* stub, bool pRead, bool pWrite, long sec = 0, long usec = 0);
 
 	//! Registers a class derived from CSocketStub into the management system.
@@ -127,9 +127,6 @@ private:
 	//! List of classes registered with the socket manager.
 	std::vector<CSocketStub*> stubList;
 	std::vector<CSocketStub*> newStubs;
-
-	//! Max socket descriptor.
-	SOCKET fd_max;
 };
 
 //! Properties to pass to the socket.

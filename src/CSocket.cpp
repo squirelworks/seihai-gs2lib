@@ -24,7 +24,6 @@
 #include <cstdio>
 #include <memory>
 #include <thread>
-#include <unordered_set>
 #include <utility>
 #include <vector>
 
@@ -85,6 +84,7 @@
 	#include <net/if.h>
 	#include <netinet/in.h>
 	#include <netinet/tcp.h>
+	#include <poll.h>
 	#include <sys/types.h>
 	#include <sys/socket.h>
 
@@ -134,48 +134,159 @@
 static const char* errorMessage(int error);
 static int identifyError();
 
-bool CSocketManager::update(const long sec, const long usec)
+namespace
 {
-	fd_set set_read{};
-	fd_set set_write{};
-	struct timeval tm{};
-
-	tm.tv_sec = sec;
-	tm.tv_usec = usec;
-	FD_ZERO(&set_read);
-	FD_ZERO(&set_write);
-
-	// Put all the socket handles into the set.
-	SOCKET max = 0;
-	for (const auto& stub : stubList)
+	struct ReadyFd
 	{
-		if (stub == nullptr) continue;
-		if (const SOCKET sock = stub->getSocketHandle(); sock != INVALID_SOCKET)
+		SOCKET fd = INVALID_SOCKET;
+		short events = 0;
+		short revents = 0;
+	};
+
+	int waitMilliseconds(const long sec, const long usec)
+	{
+		if (sec < 0)
+			return -1;
+		const long long ms = static_cast<long long>(sec) * 1000LL + (static_cast<long long>(usec) + 999LL) / 1000LL;
+		if (ms > INT32_MAX)
+			return INT32_MAX;
+		if (ms < 0)
+			return 0;
+		return static_cast<int>(ms);
+	}
+
+	int waitReady(ReadyFd* ready, const size_t count, const int timeoutMs)
+	{
+		if (count == 0)
 		{
-			if (sock > max) max = sock;
-			if (stub->canRecv()) FD_SET(sock, &set_read);
-			if (stub->canSend()) FD_SET(sock, &set_write);
+			if (timeoutMs > 0)
+				std::this_thread::sleep_for(std::chrono::milliseconds(timeoutMs));
+			return 0;
+		}
+
+#if defined(_WIN32) || defined(_WIN64)
+		std::vector<WSAPOLLFD> fds(count);
+		for (size_t i = 0; i < count; ++i)
+		{
+			fds[i].fd = ready[i].fd;
+			fds[i].events = ready[i].events;
+			fds[i].revents = 0;
+		}
+		const int rc = WSAPoll(fds.data(), static_cast<ULONG>(count), timeoutMs);
+		for (size_t i = 0; i < count; ++i)
+			ready[i].revents = fds[i].revents;
+		return rc;
+#else
+		std::vector<pollfd> fds(count);
+		for (size_t i = 0; i < count; ++i)
+		{
+			fds[i].fd = static_cast<int>(ready[i].fd);
+			fds[i].events = ready[i].events;
+			fds[i].revents = 0;
+		}
+		int rc = 0;
+		for (;;)
+		{
+			rc = ::poll(fds.data(), static_cast<nfds_t>(count), timeoutMs);
+			if (rc < 0 && errno == EINTR)
+				continue;
+			break;
+		}
+		for (size_t i = 0; i < count; ++i)
+			ready[i].revents = fds[i].revents;
+		return rc;
+#endif
+	}
+
+	bool readyToRead(const short revents)
+	{
+		return (revents & (POLLIN | POLLHUP | POLLERR | POLLNVAL)) != 0;
+	}
+
+	bool readyToWrite(const short revents)
+	{
+		return (revents & POLLOUT) != 0;
+	}
+
+	void forgetStub(std::vector<CSocketStub*>& list, const CSocketStub* stub)
+	{
+		for (auto& s : list)
+		{
+			if (s == stub)
+				s = nullptr;
 		}
 	}
-	fd_max = max;
+}
+
+bool CSocketManager::update(const long sec, const long usec)
+{
+	std::vector<ReadyFd> ready;
+	std::vector<size_t> indexes;
+	ready.reserve(stubList.size());
+	indexes.reserve(stubList.size());
+
+	SOCKET max = 0;
+	for (size_t i = 0; i < stubList.size(); ++i)
+	{
+		CSocketStub* stub = stubList[i];
+		if (stub == nullptr)
+			continue;
+
+		const SOCKET sock = stub->getSocketHandle();
+		if (sock == INVALID_SOCKET)
+			continue;
+
+		short events = 0;
+		if (stub->canRecv())
+			events = static_cast<short>(events | POLLIN);
+		if (stub->canSend())
+			events = static_cast<short>(events | POLLOUT);
+
+		if (events == 0)
+			continue;
+
+		if (sock > max)
+			max = sock;
+
+		ReadyFd slot;
+		slot.fd = sock;
+		slot.events = events;
+		ready.push_back(slot);
+		indexes.push_back(i);
+	}
 
 	// Do the select.
-	select(fd_max + 1, &set_read, &set_write, nullptr, &tm);
+	(void)waitReady(ready.data(), ready.size(), waitMilliseconds(sec, usec));
 
 	// Loop through all the socket handles and call relevant functions.
-	for (auto& stub : stubList)
+	// Indexes stay valid: registerSocket appends to newStubs, and this loop only nulls entries.
+	// A callback may destroy a player; that player's destructor unregisters it, which nulls the slot before the object is gone.
+	for (size_t n = 0; n < ready.size(); ++n)
 	{
-		if (stub == nullptr) continue;
-		if (const SOCKET sock = stub->getSocketHandle(); sock != INVALID_SOCKET)
+		const size_t index = indexes[n];
+		if (index >= stubList.size())
+			continue;
+
+		CSocketStub* stub = stubList[index];
+		if (stub == nullptr)
+			continue;
+
+		const short revents = ready[n].revents;
+		if (revents == 0)
+			continue;
+
+		bool success = true;
+		if (readyToRead(revents))
+			success = stub->onRecv();
+
+		if (success && index < stubList.size() && stubList[index] == stub && readyToWrite(revents))
+			success = stub->onSend();
+
+		if (!success && index < stubList.size() && stubList[index] == stub)
 		{
-			bool success = true;
-			if (FD_ISSET(sock, &set_read)) success = stub->onRecv();
-			if (success && stub != nullptr && FD_ISSET(sock, &set_write)) success = stub->onSend();
-			if (!success && stub != nullptr)
-			{
-				stub->onUnregister();
-				stub = nullptr;
-			}
+			stub->onUnregister();
+			if (index < stubList.size() && stubList[index] == stub)
+				stubList[index] = nullptr;
 		}
 	}
 
@@ -194,44 +305,59 @@ bool CSocketManager::update(const long sec, const long usec)
 
 bool CSocketManager::updateSingle(CSocketStub* stub, const bool pRead, const bool pWrite, const long sec, const long usec)
 {
-	fd_set set_read{};
-	fd_set set_write{};
-	struct timeval tm{};
+	if (stub == nullptr)
+		return false;
 
-	if (stub == nullptr) return false;
-
-	tm.tv_sec = sec;
-	tm.tv_usec = usec;
-	FD_ZERO(&set_read);
-	FD_ZERO(&set_write);
-
-	// Put the socket handle into the set.
 	const SOCKET sock = stub->getSocketHandle();
-	if (sock == INVALID_SOCKET) return false;
-	if (pRead && stub->canRecv()) FD_SET(sock, &set_read);
-	if (pWrite && stub->canSend()) FD_SET(sock, &set_write);
+	if (sock == INVALID_SOCKET)
+		return false;
 
-	// Do the select.
-	select(fd_max + 1, &set_read, &set_write, nullptr, &tm);
+	ReadyFd slot;
+	slot.fd = sock;
+	if (pRead && stub->canRecv())
+		slot.events = static_cast<short>(slot.events | POLLIN);
+	if (pWrite && stub->canSend())
+		slot.events = static_cast<short>(slot.events | POLLOUT);
 
-	// Call relevant functions.
-	if (FD_ISSET(sock, &set_read))
+	// Wait on the socket.
+	(void)waitReady(&slot, slot.events == 0 ? 0 : 1, waitMilliseconds(sec, usec));
+
+	auto stillRegistered = [&]()
+	{
+		return std::ranges::find(stubList, stub) != stubList.end()
+			|| std::ranges::find(newStubs, stub) != newStubs.end();
+	};
+	if (!stillRegistered())
+		return false;
+
+	// Call the onRecv.
+	if (readyToRead(slot.revents))
 	{
 		if (!stub->onRecv())
 		{
-			stub->onUnregister();
-			if (const auto i = std::ranges::find(stubList, stub); i != stubList.end())
-				*i = nullptr;
+			if (stillRegistered())
+			{
+				stub->onUnregister();
+				forgetStub(stubList, stub);
+				forgetStub(newStubs, stub);
+			}
 			return false;
 		}
 	}
-	if (FD_ISSET(sock, &set_write))
+	if (!stillRegistered())
+		return false;
+
+	// Call the onSend.
+	if (readyToWrite(slot.revents))
 	{
 		if (!stub->onSend())
 		{
-			stub->onUnregister();
-			if (const auto i = std::ranges::find(stubList, stub); i != stubList.end())
-				*i = nullptr;
+			if (stillRegistered())
+			{
+				stub->onUnregister();
+				forgetStub(stubList, stub);
+				forgetStub(newStubs, stub);
+			}
 			return false;
 		}
 	}
@@ -242,9 +368,8 @@ bool CSocketManager::updateSingle(CSocketStub* stub, const bool pRead, const boo
 bool CSocketManager::registerSocket(CSocketStub* stub)
 {
 	if (stub == nullptr) return false;
-	if (const SOCKET sock = stub->getSocketHandle(); stub->onRegister())
+	if (stub->onRegister())
 	{
-		if (sock > fd_max) fd_max = sock;
 		newStubs.push_back(stub);
 		return true;
 	}
@@ -253,54 +378,45 @@ bool CSocketManager::registerSocket(CSocketStub* stub)
 
 bool CSocketManager::unregisterSocket(CSocketStub* stub)
 {
-	if (stub == nullptr) return false;
-	static std::unordered_set<CSocketStub*> unregisterSet;
+	if (stub == nullptr)
+		return false;
 
-	// Function to search for sockets that match this handle and add them to the unregister set.
-	// This will also nullptr the stubs in the list so they can be removed later.
-	unregisterSet.clear();
-	auto findSocket = [](std::vector<CSocketStub*>& list, const SOCKET sock) -> bool
+	// Remove the stub.
+	bool found = false;
+	auto take = [&](std::vector<CSocketStub*>& list)
 	{
-		bool found = false;
 		for (auto& s : list)
 		{
-			if (s == nullptr) continue;
-			if (const SOCKET sock2 = s->getSocketHandle(); sock2 == sock)
+			if (s == stub)
 			{
-				unregisterSet.emplace(s);
 				s = nullptr;
 				found = true;
 			}
 		}
-		return found;
 	};
+	take(stubList);
+	take(newStubs);
 
-	// Search for sockets in both the stub list and the new stub list.
-	const SOCKET sock = stub->getSocketHandle();
-	bool found = findSocket(stubList, sock);
-	found |= findSocket(newStubs, sock);
-
-	// Call onUnregister for all the sockets we found.
-	for (auto& s : unregisterSet)
-	{
-		if (s == nullptr) continue;
-		s->onUnregister();
-	}
-
+	if (found)
+		stub->onUnregister();
 	return found;
 }
 
 void CSocketManager::cleanup(const bool callOnUnregister)
 {
-	for (const auto stub : stubList)
+	auto finish = [&](std::vector<CSocketStub*>& list)
 	{
-		if (stub == nullptr) continue;
-
-		if (callOnUnregister)
-			stub->onUnregister();
-	}
-	stubList.clear();
-	fd_max = 0;
+		for (const auto stub : list)
+		{
+			if (stub == nullptr)
+				continue;
+			if (callOnUnregister)
+				stub->onUnregister();
+		}
+		list.clear();
+	};
+	finish(stubList);
+	finish(newStubs);
 }
 
 ////////////////////////////////////////////////////////////
@@ -427,13 +543,13 @@ int CSocket::connect()
 	if (properties.type == SOCKET_TYPE_SERVER)
 	{
 
-        /* If we should use the reuse property. Default: yes */
-        if (properties.reuse)
-        {
-		    // Let us reuse the address.
-		    int value = 1;
-		    setsockopt(properties.handle, SOL_SOCKET, SO_REUSEADDR, (char*)&value, sizeof(value));
-        }
+		/* If we should use the reuse property. Default: yes */
+		if (properties.reuse)
+		{
+			// Let us reuse the address.
+			int value = 1;
+			setsockopt(properties.handle, SOL_SOCKET, SO_REUSEADDR, (char*)&value, sizeof(value));
+		}
 
 		// Bind the socket.
 		if (::bind(properties.handle, reinterpret_cast<struct sockaddr *>(&properties.address), properties.addresslen) == SOCKET_ERROR)
@@ -849,86 +965,86 @@ const char* CSocket::getRemotePort() const
 
 static bool isPrivateIpv4(const uint32_t host)
 {
-    const uint8_t a = (host >> 24) & 0xFF;
-    const uint8_t b = (host >> 16) & 0xFF;
-    if (a == 10) return true;                        // 10.0.0.0/8
-    if (a == 172 && b >= 16 && b <= 31) return true; // 172.16.0.0/12
-    if (a == 192 && b == 168) return true;           // 192.168.0.0/16
-    return false;
+	const uint8_t a = (host >> 24) & 0xFF;
+	const uint8_t b = (host >> 16) & 0xFF;
+	if (a == 10) return true;                        // 10.0.0.0/8
+	if (a == 172 && b >= 16 && b <= 31) return true; // 172.16.0.0/12
+	if (a == 192 && b == 168) return true;           // 192.168.0.0/16
+	return false;
 }
 
 static bool isLoopbackIpv4(const uint32_t host)
 {
-    return ((host >> 24) & 0xFF) == 127;  // 127.0.0.0/8
+	return ((host >> 24) & 0xFF) == 127;  // 127.0.0.0/8
 }
 
 static std::vector<std::string> getPrivateLanIpv4s() {
-    std::vector<std::string> out;
+	std::vector<std::string> out;
 
 #ifdef _WIN32
-    ULONG flags = GAA_FLAG_SKIP_ANYCAST | GAA_FLAG_SKIP_MULTICAST | GAA_FLAG_SKIP_DNS_SERVER;
-    ULONG family = AF_INET;
-    ULONG bufLen = 15 * 1024;
-    std::vector<unsigned char> buf(bufLen);
+	ULONG flags = GAA_FLAG_SKIP_ANYCAST | GAA_FLAG_SKIP_MULTICAST | GAA_FLAG_SKIP_DNS_SERVER;
+	ULONG family = AF_INET;
+	ULONG bufLen = 15 * 1024;
+	std::vector<unsigned char> buf(bufLen);
 
-    auto addrs = reinterpret_cast<IP_ADAPTER_ADDRESSES*>(buf.data());
-    auto rc = GetAdaptersAddresses(family, flags, nullptr, addrs, &bufLen);
-    if (rc == ERROR_BUFFER_OVERFLOW)
-    {
-        buf.resize(bufLen);
-        addrs = reinterpret_cast<IP_ADAPTER_ADDRESSES*>(buf.data());
-        rc = GetAdaptersAddresses(family, flags, nullptr, addrs, &bufLen);
-    }
+	auto addrs = reinterpret_cast<IP_ADAPTER_ADDRESSES*>(buf.data());
+	auto rc = GetAdaptersAddresses(family, flags, nullptr, addrs, &bufLen);
+	if (rc == ERROR_BUFFER_OVERFLOW)
+	{
+		buf.resize(bufLen);
+		addrs = reinterpret_cast<IP_ADAPTER_ADDRESSES*>(buf.data());
+		rc = GetAdaptersAddresses(family, flags, nullptr, addrs, &bufLen);
+	}
 
-    if (rc == NO_ERROR)
-    {
-        for (auto* a = addrs; a; a = a->Next)
-        {
-            if (a->OperStatus != IfOperStatusUp) continue;
-            if (a->IfType == IF_TYPE_SOFTWARE_LOOPBACK) continue;
+	if (rc == NO_ERROR)
+	{
+		for (auto* a = addrs; a; a = a->Next)
+		{
+			if (a->OperStatus != IfOperStatusUp) continue;
+			if (a->IfType == IF_TYPE_SOFTWARE_LOOPBACK) continue;
 
-            for (auto* u = a->FirstUnicastAddress; u; u = u->Next)
-            {
-                if (!u->Address.lpSockaddr || u->Address.lpSockaddr->sa_family != AF_INET)
-                	continue;
+			for (auto* u = a->FirstUnicastAddress; u; u = u->Next)
+			{
+				if (!u->Address.lpSockaddr || u->Address.lpSockaddr->sa_family != AF_INET)
+					continue;
 
-                auto* sin = reinterpret_cast<sockaddr_in*>(u->Address.lpSockaddr);
-                uint32_t host = ntohl(sin->sin_addr.s_addr);
-                if (isLoopbackIpv4(host) || !isPrivateIpv4(host))
-                	continue;
+				auto* sin = reinterpret_cast<sockaddr_in*>(u->Address.lpSockaddr);
+				uint32_t host = ntohl(sin->sin_addr.s_addr);
+				if (isLoopbackIpv4(host) || !isPrivateIpv4(host))
+					continue;
 
-                char s[INET_ADDRSTRLEN]{};
-                inet_ntop(AF_INET, &sin->sin_addr, s, sizeof(s));
-                out.emplace_back(s);
-            }
-        }
-    }
+				char s[INET_ADDRSTRLEN]{};
+				inet_ntop(AF_INET, &sin->sin_addr, s, sizeof(s));
+				out.emplace_back(s);
+			}
+		}
+	}
 #else
-    ifaddrs* ifaddr = nullptr;
-    if (getifaddrs(&ifaddr) != 0)
-    	return out;
+	ifaddrs* ifaddr = nullptr;
+	if (getifaddrs(&ifaddr) != 0)
+		return out;
 
-    for (const ifaddrs* ifa = ifaddr; ifa; ifa = ifa->ifa_next)
-    {
-        if (!ifa->ifa_addr) continue;
-        if (ifa->ifa_addr->sa_family != AF_INET) continue;
-        if (!(ifa->ifa_flags & IFF_UP)) continue;
-        if (ifa->ifa_flags & IFF_LOOPBACK) continue;
+	for (const ifaddrs* ifa = ifaddr; ifa; ifa = ifa->ifa_next)
+	{
+		if (!ifa->ifa_addr) continue;
+		if (ifa->ifa_addr->sa_family != AF_INET) continue;
+		if (!(ifa->ifa_flags & IFF_UP)) continue;
+		if (ifa->ifa_flags & IFF_LOOPBACK) continue;
 
-        const auto* sin = reinterpret_cast<const sockaddr_in*>(ifa->ifa_addr);
-        uint32_t host = ntohl(sin->sin_addr.s_addr);
-        if (isLoopbackIpv4(host) || !isPrivateIpv4(host))
-        	continue;
+		const auto* sin = reinterpret_cast<const sockaddr_in*>(ifa->ifa_addr);
+		uint32_t host = ntohl(sin->sin_addr.s_addr);
+		if (isLoopbackIpv4(host) || !isPrivateIpv4(host))
+			continue;
 
-        char s[INET_ADDRSTRLEN]{};
-        inet_ntop(AF_INET, &sin->sin_addr, s, sizeof(s));
-        out.emplace_back(s);
-    }
+		char s[INET_ADDRSTRLEN]{};
+		inet_ntop(AF_INET, &sin->sin_addr, s, sizeof(s));
+		out.emplace_back(s);
+	}
 
-    freeifaddrs(ifaddr);
+	freeifaddrs(ifaddr);
 #endif
 
-    return out;
+	return out;
 }
 
 const char* CSocket::getLocalIp()
