@@ -1,4 +1,4 @@
-// Modified by the Seihai project, 2026-11-01, 2026-11-12, 2026-11-14: see CHANGES-SEIHAI.md.
+// Modified by the Seihai project, 2026-11-01, 2026-11-12, 2026-11-14, 2026-11-18: see CHANGES-SEIHAI.md.
 /*
  * include/CFileQueue.cpp
  *
@@ -33,6 +33,14 @@ namespace
     // PLO_OTHERPLPROPS are not queued. The next update still goes out after
     // the queue drains, and a crowd of walkers cannot grow it without bound.
     constexpr size_t kPositionFanoutCap = 4096;
+
+    // A queued packet starts with its id as a GCHAR (id + 32), raw packets included.
+    int queuedPacketId(const CString& packet)
+    {
+        if (packet.isEmpty())
+            return -1;
+        return static_cast<unsigned char>(packet[0]) - 0x20;
+    }
 }
 
 void CFileQueue::addPacket(const PacketQueue queue, const CString& packet)
@@ -45,9 +53,9 @@ void CFileQueue::addPacket(const PacketQueue queue, const CString& packet)
     {
         if (static_cast<unsigned char>(packet[0] - 0x20) == PLO_OTHERPLPROPS && m_normalBuffer.size() >= kPositionFanoutCap)
             return;
-        m_normalBuffer.emplace(false, packet);
+        m_normalBuffer.emplace_back(false, packet);
     }
-    else m_fileBuffer.emplace(false, packet);
+    else m_fileBuffer.emplace_back(false, packet);
 }
 
 void CFileQueue::addRawPacket(const PacketQueue queue, const CString& packet)
@@ -57,15 +65,37 @@ void CFileQueue::addRawPacket(const PacketQueue queue, const CString& packet)
         return;
 
     if (queue == PacketQueue::NORMAL)
-        m_normalBuffer.emplace(true, packet);
-    else m_fileBuffer.emplace(true, packet);
+        m_normalBuffer.emplace_back(true, packet);
+    else m_fileBuffer.emplace_back(true, packet);
+}
+
+void CFileQueue::moveInProgressFileTransferToNormalQueue()
+{
+    if (!m_currentlySendingLargeFile)
+        return;
+
+    // Seihai: the rest of the file being sent is at the front of the file queue. Move it in
+    // order, up to and including its PLO_LARGEFILEEND. Upstream walks from the back, which
+    // moves the last queued packet first and reverses the order.
+    while (!m_fileBuffer.empty())
+    {
+        auto packet = std::move(m_fileBuffer.front());
+        m_fileBuffer.pop_front();
+        const bool isFinalPacket = queuedPacketId(packet.second) == PLO_LARGEFILEEND;
+
+        m_normalBuffer.emplace_back(std::move(packet));
+        if (isFinalPacket)
+            break;
+    }
+    m_currentlySendingLargeFile = false;
 }
 
 void CFileQueue::clearBuffers()
 {
-    std::queue<std::pair<bool, CString>>().swap(m_normalBuffer);
-    std::queue<std::pair<bool, CString>>().swap(m_fileBuffer);
+    std::deque<std::pair<bool, CString>>().swap(m_normalBuffer);
+    std::deque<std::pair<bool, CString>>().swap(m_fileBuffer);
     m_bytesSentWithoutFile = 0;
+    m_currentlySendingLargeFile = false;
     m_sendBuffer.clear();
 }
 
@@ -114,6 +144,26 @@ void CFileQueue::sendCompress(const bool forceSendFiles)
         if (m_outputCodec.getGen() <= ENCRYPT_GEN_5)
             m_scratchBuffer << '\n';
     };
+    auto normalQueueContainsFile = [this]() -> bool
+    {
+        // ReSharper disable once CppUseElementsView
+        for (const auto& [raw, packet] : m_normalBuffer)
+        {
+            // Seihai: compare the decoded id. Upstream compared the GCHAR byte with the enum.
+            const int id = queuedPacketId(packet);
+            if (id == PLO_LARGEFILESTART || id == PLO_LARGEFILESIZE || id == PLO_FILE || id == PLO_LARGEFILEEND)
+                return true;
+        }
+        return false;
+    };
+    auto updateLargeFileStatus = [this](const CString& packet)
+    {
+        const int id = queuedPacketId(packet);
+        if (id == PLO_LARGEFILESTART)
+            m_currentlySendingLargeFile = true;
+        else if (id == PLO_LARGEFILEEND)
+            m_currentlySendingLargeFile = false;
+    };
 
     m_scratchBuffer.clear();
 
@@ -122,15 +172,23 @@ void CFileQueue::sendCompress(const bool forceSendFiles)
     if (!m_normalBuffer.empty() && m_normalBuffer.front().second.length() > MAX_PACKET_SIZE)
     {
         addPacket(m_normalBuffer.front());
-        m_normalBuffer.pop();
+        m_normalBuffer.pop_front();
     }
 
+    // Check if the normal queue contains files.
+    // If it doesn't don't move anything over from the file queue.
+    // We might encounter a situation where we have a forced file send in the normal queue and adding file transfers out of order will corrupt them.
+    // Normally, file transfers are deprioritized and are sent in smaller chunks at a time, so a file may be partially sent.
+    const bool filesInNormalQueue = normalQueueContainsFile();
+
     // If we haven't sent a file in a while, forcibly send one now.
-    if (m_scratchBuffer.isEmpty() && (m_bytesSentWithoutFile > 0x7FFF || forceSendFiles || m_sendCallsWithoutData >= 4) && !m_fileBuffer.empty()) // 32KB
+    if (!filesInNormalQueue && m_scratchBuffer.isEmpty() && (m_bytesSentWithoutFile > 0x7FFF || forceSendFiles || m_sendCallsWithoutData >= 4) && !m_fileBuffer.empty()) // 32KB
     {
         m_bytesSentWithoutFile = 0;
-        addPacket(m_fileBuffer.front());
-        m_fileBuffer.pop();
+        const auto& packet = m_fileBuffer.front();
+        updateLargeFileStatus(packet.second);
+        addPacket(packet);
+        m_fileBuffer.pop_front();
     }
 
     // Keep adding packets from normalBuffer until we hit 48KB or we run out of packets.
@@ -141,19 +199,21 @@ void CFileQueue::sendCompress(const bool forceSendFiles)
             break;
 
         addPacket(m_normalBuffer.front());
-        m_normalBuffer.pop();
+        m_normalBuffer.pop_front();
     }
     m_bytesSentWithoutFile += m_scratchBuffer.length();
 
     // If we have less than 16KB of data, try to add a file.
-    if (m_scratchBuffer.length() < 0x4000 && !m_fileBuffer.empty()) // 16KB
+    if (!filesInNormalQueue && m_scratchBuffer.length() < 0x4000 && !m_fileBuffer.empty()) // 16KB
     {
         // If the next packet sticks us over 60KB, don't add it.
         if (m_scratchBuffer.length() + m_fileBuffer.front().second.length() <= MAX_PACKET_SIZE)
         {
             m_bytesSentWithoutFile = 0;
-            addPacket(m_fileBuffer.front());
-            m_fileBuffer.pop();
+            const auto& packet = m_fileBuffer.front();
+            updateLargeFileStatus(packet.second);
+            addPacket(packet);
+            m_fileBuffer.pop_front();
         }
     }
 

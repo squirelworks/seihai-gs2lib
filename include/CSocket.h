@@ -90,7 +90,7 @@ class CSocketManager
 {
 public:
 	//! Constructor.
-	CSocketManager() : fd_max(0) {}
+	CSocketManager() = default;
 
 	//! Updates the state of the sockets.
 	//! Calls the functions of all the registered CSocketStub classes.
@@ -130,9 +130,6 @@ private:
 	//! List of classes registered with the socket manager.
 	std::vector<CSocketStub*> stubList;
 	std::vector<CSocketStub*> newStubs;
-
-	//! Max socket descriptor.
-	SOCKET fd_max;
 };
 
 //! Properties to pass to the socket.
