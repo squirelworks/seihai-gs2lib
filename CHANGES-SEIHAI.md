@@ -2,8 +2,8 @@
 
 Mirror of [gs2lib](https://bitbucket.org/xtjoeytx/gs2lib) (GPL-3.0, see `LICENSE.md`).
 `master` is a copy of upstream and can lag behind it. Our changes are on branch
-`seihai`, which includes upstream through `e269a79` (the commit GServer-v2 beta4
-pins since 2026-11-11). Used by
+`seihai`, which includes upstream through `6dd10ff` (the commit GServer-v2 beta4
+pins since 2026-11-17). Used by
 [seihai-gserver-v2](https://github.com/squirelworks/seihai-gserver-v2).
 
 ## 2026-11-18
@@ -11,6 +11,8 @@ pins since 2026-11-11). Used by
 | Change | Files | Checked with |
 |---|---|---|
 | The fuzz build (`-DGS2LIB_FUZZ=ON`) now compiles the library itself with `-fsanitize=fuzzer-no-link,address,undefined`. Before, only the four harness files were instrumented, so ASan and UBSan could not see an overflow inside gs2lib and libFuzzer got no coverage from the code under test. The fuzz workflow also runs a 30-second smoke per target on pull requests that touch the decoders, headers, harnesses or the build file. Default and `GS2LIB_TESTS` builds are unchanged. | `CMakeLists.txt`, `.github/workflows/fuzz.yml`, `CHANGES-SEIHAI.md` | The fuzz workflow on this branch (clang-18, ASan/UBSan). |
+| Merged upstream gs2lib up to `6dd10ff` (2026-11-17, 4 commits after `e269a79`), the commit GServer-v2 `beta4` `bc54973` pins. Upstream's socket manager now waits with `poll`/`WSAPoll` and unregisters only the stub it is given; this is our 2026-11-14 fix taken upstream, so `CSocket.cpp` and `CSocket.h` now follow upstream's form, which also drops `fd_max`. Kept on top: the address family from `init()` when creating a socket (IPv6), and our comments. `CFileQueue` takes upstream's `deque` buffers, `moveInProgressFileTransferToNormalQueue()` (a large file already being sent is moved to the normal queue so a forced file in that queue cannot interleave with it), and no file is pulled from the file queue while the normal queue holds one (`c5f4945`); upstream's `canSend` now counts unsent bytes (`5ffad26`), which we already did. Kept on top: the `PLO_OTHERPLPROPS` fan-out cap, the single retry of already-encoded bytes before a new frame, and `setGen5Steps`. `getVersionString` returning `"unknown"` (`39e23b0`) was already ours. `.clang-format` takes upstream's `UseTab: ForIndentation`. | `include/CFileQueue.h`, `src/CFileQueue.cpp`, `include/CSocket.h`, `src/CSocket.cpp`, `.clang-format`, `CHANGES-SEIHAI.md` | Linux GCC: all 7 `GS2LIB_TESTS` pass (`FileQueueSendTest`, `SocketFamilyTest` among them) |
+| Upstream's new large-file logic in `CFileQueue` (`c5f4945`) compared the first byte of a queued packet with the packet enum, but that byte is the id as a GCHAR (id + 32), so a large file was never seen as in progress and `moveInProgressFileTransferToNormalQueue()` did nothing; ids 36, 37, 52 and 70 were taken for file packets instead and held the file queue while one was waiting. The id is now decoded first. The move also walked the file queue from the back, so it would have moved the last queued packet first; it now moves from the front, in order, up to and including the file's `PLO_LARGEFILEEND`. `FileQueueSendTest` covers it (fails on upstream's code: nothing moved, order and stall). | `src/CFileQueue.cpp`, `tests/FileQueueSendTest.cpp`, `CHANGES-SEIHAI.md` | Linux GCC: all 7 `GS2LIB_TESTS` pass; no real client run yet (a forced gmap send during a large file send is the case to watch) |
 
 ## 2026-11-16
 
