@@ -6,6 +6,12 @@ Mirror of [gs2lib](https://bitbucket.org/xtjoeytx/gs2lib) (GPL-3.0, see `LICENSE
 pins since 2026-11-11). Used by
 [seihai-gserver-v2](https://github.com/squirelworks/seihai-gserver-v2).
 
+## 2026-11-18
+
+| Change | Files | Checked with |
+|---|---|---|
+| The fuzz build (`-DGS2LIB_FUZZ=ON`) now compiles the library itself with `-fsanitize=fuzzer-no-link,address,undefined`. Before, only the four harness files were instrumented, so ASan and UBSan could not see an overflow inside gs2lib and libFuzzer got no coverage from the code under test. The fuzz workflow also runs a 30-second smoke per target on pull requests that touch the decoders, headers, harnesses or the build file. Default and `GS2LIB_TESTS` builds are unchanged. | `CMakeLists.txt`, `.github/workflows/fuzz.yml`, `CHANGES-SEIHAI.md` | The fuzz workflow on this branch (clang-18, ASan/UBSan). |
+
 ## 2026-11-16
 
 | Change | Files | Checked with |

@@ -1,4 +1,4 @@
-# Modified by the Seihai project, 2026-11-07, 2026-11-14, 2026-11-15, 2026-11-16: see CHANGES-SEIHAI.md.
+# Modified by the Seihai project, 2026-11-07, 2026-11-14, 2026-11-15, 2026-11-16, 2026-11-18: see CHANGES-SEIHAI.md.
 #
 #  CMakeLists.txt
 #
@@ -300,6 +300,11 @@ if(GS2LIB_FUZZ)
 		message(FATAL_ERROR "GS2LIB_FUZZ requires Clang (libFuzzer).")
 	endif()
 	set(_gs2lib_fuzz_sanitize "-fsanitize=fuzzer,address,undefined")
+	# The library itself must be instrumented too: without this, ASan and
+	# UBSan only see the harness, and libFuzzer gets no coverage from the
+	# code under test, so a bounds bug inside gs2lib is neither found nor
+	# reported.
+	target_compile_options(${TARGET_NAME} PRIVATE -fsanitize=fuzzer-no-link,address,undefined -fno-omit-frame-pointer -g)
 	foreach(_fuzz_target IN ITEMS fuzz_decrypt fuzz_decompress fuzz_version fuzz_frame)
 		add_executable(${_fuzz_target} fuzz/${_fuzz_target}.cpp)
 		target_link_libraries(${_fuzz_target} PRIVATE ${TARGET_NAME})
