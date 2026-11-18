@@ -1,4 +1,4 @@
-// Modified by the Seihai project, 2026-11-01, 2026-11-14: see CHANGES-SEIHAI.md.
+// Modified by the Seihai project, 2026-11-01, 2026-11-14, 2026-11-18: see CHANGES-SEIHAI.md.
 /*
  * include/CSocket.cpp
  *
@@ -153,8 +153,8 @@ namespace
 		if (sec < 0)
 			return -1;
 		const long long ms = static_cast<long long>(sec) * 1000LL + (static_cast<long long>(usec) + 999LL) / 1000LL;
-		if (ms > 2147483647LL)
-			return 2147483647;
+		if (ms > INT32_MAX)
+			return INT32_MAX;
 		if (ms < 0)
 			return 0;
 		return static_cast<int>(ms);
@@ -213,7 +213,7 @@ namespace
 		return (revents & POLLOUT) != 0;
 	}
 
-	void forgetStub(std::vector<CSocketStub*>& list, CSocketStub* stub)
+	void forgetStub(std::vector<CSocketStub*>& list, const CSocketStub* stub)
 	{
 		for (auto& s : list)
 		{
@@ -236,39 +236,46 @@ bool CSocketManager::update(const long sec, const long usec)
 		CSocketStub* stub = stubList[i];
 		if (stub == nullptr)
 			continue;
+
 		const SOCKET sock = stub->getSocketHandle();
 		if (sock == INVALID_SOCKET)
 			continue;
+
 		short events = 0;
 		if (stub->canRecv())
 			events = static_cast<short>(events | POLLIN);
 		if (stub->canSend())
 			events = static_cast<short>(events | POLLOUT);
+
 		if (events == 0)
 			continue;
+
 		if (sock > max)
 			max = sock;
+
 		ReadyFd slot;
 		slot.fd = sock;
 		slot.events = events;
 		ready.push_back(slot);
 		indexes.push_back(i);
 	}
-	fd_max = max;
 
+	// Do the select.
 	(void)waitReady(ready.data(), ready.size(), waitMilliseconds(sec, usec));
 
-	// Indexes stay valid: registerSocket appends to newStubs, and this loop
-	// only nulls entries. A callback may destroy a player; that player's
-	// destructor unregisters it, which nulls the slot before the object is gone.
+	// Loop through all the socket handles and call relevant functions.
+	// Indexes stay valid: registerSocket appends to newStubs, and this loop only nulls entries.
+	// A callback may destroy a player; that player's destructor unregisters it, which nulls the slot before the object is gone.
 	for (size_t n = 0; n < ready.size(); ++n)
 	{
 		const size_t index = indexes[n];
 		if (index >= stubList.size())
 			continue;
+
 		CSocketStub* stub = stubList[index];
 		if (stub == nullptr)
 			continue;
+
 		const short revents = ready[n].revents;
 		if (revents == 0)
 			continue;
@@ -317,8 +324,7 @@ bool CSocketManager::updateSingle(CSocketStub* stub, const bool pRead, const boo
 	if (pWrite && stub->canSend())
 		slot.events = static_cast<short>(slot.events | POLLOUT);
 
-	// One socket. The old select() waited on every descriptor up to fd_max,
-	// so a single send still aborted once any connection was past FD_SETSIZE.
+	// Wait on the socket.
 	(void)waitReady(&slot, slot.events == 0 ? 0 : 1, waitMilliseconds(sec, usec));
 
 	auto stillRegistered = [&]()
@@ -329,6 +335,7 @@ bool CSocketManager::updateSingle(CSocketStub* stub, const bool pRead, const boo
 	if (!stillRegistered())
 		return false;
 
+	// Call the onRecv.
 	if (readyToRead(slot.revents))
 	{
 		if (!stub->onRecv())
@@ -344,6 +351,8 @@ bool CSocketManager::updateSingle(CSocketStub* stub, const bool pRead, const boo
 	}
 	if (!stillRegistered())
 		return false;
+
+	// Call the onSend.
 	if (readyToWrite(slot.revents))
 	{
 		if (!stub->onSend())
@@ -364,9 +373,8 @@ bool CSocketManager::updateSingle(CSocketStub* stub, const bool pRead, const boo
 bool CSocketManager::registerSocket(CSocketStub* stub)
 {
 	if (stub == nullptr) return false;
-	if (const SOCKET sock = stub->getSocketHandle(); stub->onRegister())
+	if (stub->onRegister())
 	{
-		if (sock > fd_max) fd_max = sock;
 		newStubs.push_back(stub);
 		return true;
 	}
@@ -418,7 +426,6 @@ void CSocketManager::cleanup(const bool callOnUnregister)
 	};
 	finish(stubList);
 	finish(newStubs);
-	fd_max = 0;
 }
 
 ////////////////////////////////////////////////////////////
@@ -545,13 +552,13 @@ int CSocket::connect()
 	if (properties.type == SOCKET_TYPE_SERVER)
 	{
 
-        /* If we should use the reuse property. Default: yes */
-        if (properties.reuse)
-        {
-		    // Let us reuse the address.
-		    int value = 1;
-		    setsockopt(properties.handle, SOL_SOCKET, SO_REUSEADDR, (char*)&value, sizeof(value));
-        }
+		/* If we should use the reuse property. Default: yes */
+		if (properties.reuse)
+		{
+			// Let us reuse the address.
+			int value = 1;
+			setsockopt(properties.handle, SOL_SOCKET, SO_REUSEADDR, (char*)&value, sizeof(value));
+		}
 
 		// Bind the socket.
 		if (::bind(properties.handle, reinterpret_cast<struct sockaddr *>(&properties.address), properties.addresslen) == SOCKET_ERROR)
@@ -967,86 +974,86 @@ const char* CSocket::getRemotePort() const
 
 static bool isPrivateIpv4(const uint32_t host)
 {
-    const uint8_t a = (host >> 24) & 0xFF;
-    const uint8_t b = (host >> 16) & 0xFF;
-    if (a == 10) return true;                        // 10.0.0.0/8
-    if (a == 172 && b >= 16 && b <= 31) return true; // 172.16.0.0/12
-    if (a == 192 && b == 168) return true;           // 192.168.0.0/16
-    return false;
+	const uint8_t a = (host >> 24) & 0xFF;
+	const uint8_t b = (host >> 16) & 0xFF;
+	if (a == 10) return true;                        // 10.0.0.0/8
+	if (a == 172 && b >= 16 && b <= 31) return true; // 172.16.0.0/12
+	if (a == 192 && b == 168) return true;           // 192.168.0.0/16
+	return false;
 }
 
 static bool isLoopbackIpv4(const uint32_t host)
 {
-    return ((host >> 24) & 0xFF) == 127;  // 127.0.0.0/8
+	return ((host >> 24) & 0xFF) == 127;  // 127.0.0.0/8
 }
 
 static std::vector<std::string> getPrivateLanIpv4s() {
-    std::vector<std::string> out;
+	std::vector<std::string> out;
 
 #ifdef _WIN32
-    ULONG flags = GAA_FLAG_SKIP_ANYCAST | GAA_FLAG_SKIP_MULTICAST | GAA_FLAG_SKIP_DNS_SERVER;
-    ULONG family = AF_INET;
-    ULONG bufLen = 15 * 1024;
-    std::vector<unsigned char> buf(bufLen);
+	ULONG flags = GAA_FLAG_SKIP_ANYCAST | GAA_FLAG_SKIP_MULTICAST | GAA_FLAG_SKIP_DNS_SERVER;
+	ULONG family = AF_INET;
+	ULONG bufLen = 15 * 1024;
+	std::vector<unsigned char> buf(bufLen);
 
-    auto addrs = reinterpret_cast<IP_ADAPTER_ADDRESSES*>(buf.data());
-    auto rc = GetAdaptersAddresses(family, flags, nullptr, addrs, &bufLen);
-    if (rc == ERROR_BUFFER_OVERFLOW)
-    {
-        buf.resize(bufLen);
-        addrs = reinterpret_cast<IP_ADAPTER_ADDRESSES*>(buf.data());
-        rc = GetAdaptersAddresses(family, flags, nullptr, addrs, &bufLen);
-    }
+	auto addrs = reinterpret_cast<IP_ADAPTER_ADDRESSES*>(buf.data());
+	auto rc = GetAdaptersAddresses(family, flags, nullptr, addrs, &bufLen);
+	if (rc == ERROR_BUFFER_OVERFLOW)
+	{
+		buf.resize(bufLen);
+		addrs = reinterpret_cast<IP_ADAPTER_ADDRESSES*>(buf.data());
+		rc = GetAdaptersAddresses(family, flags, nullptr, addrs, &bufLen);
+	}
 
-    if (rc == NO_ERROR)
-    {
-        for (auto* a = addrs; a; a = a->Next)
-        {
-            if (a->OperStatus != IfOperStatusUp) continue;
-            if (a->IfType == IF_TYPE_SOFTWARE_LOOPBACK) continue;
+	if (rc == NO_ERROR)
+	{
+		for (auto* a = addrs; a; a = a->Next)
+		{
+			if (a->OperStatus != IfOperStatusUp) continue;
+			if (a->IfType == IF_TYPE_SOFTWARE_LOOPBACK) continue;
 
-            for (auto* u = a->FirstUnicastAddress; u; u = u->Next)
-            {
-                if (!u->Address.lpSockaddr || u->Address.lpSockaddr->sa_family != AF_INET)
-                	continue;
+			for (auto* u = a->FirstUnicastAddress; u; u = u->Next)
+			{
+				if (!u->Address.lpSockaddr || u->Address.lpSockaddr->sa_family != AF_INET)
+					continue;
 
-                auto* sin = reinterpret_cast<sockaddr_in*>(u->Address.lpSockaddr);
-                uint32_t host = ntohl(sin->sin_addr.s_addr);
-                if (isLoopbackIpv4(host) || !isPrivateIpv4(host))
-                	continue;
+				auto* sin = reinterpret_cast<sockaddr_in*>(u->Address.lpSockaddr);
+				uint32_t host = ntohl(sin->sin_addr.s_addr);
+				if (isLoopbackIpv4(host) || !isPrivateIpv4(host))
+					continue;
 
-                char s[INET_ADDRSTRLEN]{};
-                inet_ntop(AF_INET, &sin->sin_addr, s, sizeof(s));
-                out.emplace_back(s);
-            }
-        }
-    }
+				char s[INET_ADDRSTRLEN]{};
+				inet_ntop(AF_INET, &sin->sin_addr, s, sizeof(s));
+				out.emplace_back(s);
+			}
+		}
+	}
 #else
-    ifaddrs* ifaddr = nullptr;
-    if (getifaddrs(&ifaddr) != 0)
-    	return out;
+	ifaddrs* ifaddr = nullptr;
+	if (getifaddrs(&ifaddr) != 0)
+		return out;
 
-    for (const ifaddrs* ifa = ifaddr; ifa; ifa = ifa->ifa_next)
-    {
-        if (!ifa->ifa_addr) continue;
-        if (ifa->ifa_addr->sa_family != AF_INET) continue;
-        if (!(ifa->ifa_flags & IFF_UP)) continue;
-        if (ifa->ifa_flags & IFF_LOOPBACK) continue;
+	for (const ifaddrs* ifa = ifaddr; ifa; ifa = ifa->ifa_next)
+	{
+		if (!ifa->ifa_addr) continue;
+		if (ifa->ifa_addr->sa_family != AF_INET) continue;
+		if (!(ifa->ifa_flags & IFF_UP)) continue;
+		if (ifa->ifa_flags & IFF_LOOPBACK) continue;
 
-        const auto* sin = reinterpret_cast<const sockaddr_in*>(ifa->ifa_addr);
-        uint32_t host = ntohl(sin->sin_addr.s_addr);
-        if (isLoopbackIpv4(host) || !isPrivateIpv4(host))
-        	continue;
+		const auto* sin = reinterpret_cast<const sockaddr_in*>(ifa->ifa_addr);
+		uint32_t host = ntohl(sin->sin_addr.s_addr);
+		if (isLoopbackIpv4(host) || !isPrivateIpv4(host))
+			continue;
 
-        char s[INET_ADDRSTRLEN]{};
-        inet_ntop(AF_INET, &sin->sin_addr, s, sizeof(s));
-        out.emplace_back(s);
-    }
+		char s[INET_ADDRSTRLEN]{};
+		inet_ntop(AF_INET, &sin->sin_addr, s, sizeof(s));
+		out.emplace_back(s);
+	}
 
-    freeifaddrs(ifaddr);
+	freeifaddrs(ifaddr);
 #endif
 
-    return out;
+	return out;
 }
 
 const char* CSocket::getLocalIp()

@@ -24,7 +24,7 @@
 #define CFILEQUEUE_H
 
 #include <cstdint>
-#include <queue>
+#include <deque>
 
 #include <CEncryption.h>
 #include <CSocket.h>
@@ -44,6 +44,8 @@ public:
     void addPacket(PacketQueue queue, const CString& packet);
     void addRawPacket(PacketQueue queue, const CString& packet);
 
+    void moveInProgressFileTransferToNormalQueue();
+
     void clearBuffers();
 
     void setSocket(CSocket* pSock);
@@ -55,8 +57,8 @@ public:
 
 private:
     CSocket* m_socket;
-    std::queue<std::pair<bool, CString>> m_normalBuffer;
-    std::queue<std::pair<bool, CString>> m_fileBuffer;
+    std::deque<std::pair<bool, CString>> m_normalBuffer;
+    std::deque<std::pair<bool, CString>> m_fileBuffer;
     CString m_scratchBuffer;
     CString m_sendBuffer;
 
@@ -64,6 +66,7 @@ private:
 
     int m_bytesSentWithoutFile;
     int m_sendCallsWithoutData = 0;
+    bool m_currentlySendingLargeFile = false;
 };
 
 inline void CFileQueue::setSocket(CSocket* pSock)
