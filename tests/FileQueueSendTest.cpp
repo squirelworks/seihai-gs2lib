@@ -1,9 +1,10 @@
-// Seihai project, 2026-11-14: see CHANGES-SEIHAI.md.
+// Seihai project, 2026-11-14, 2026-11-18: see CHANGES-SEIHAI.md.
 // GNU General Public License version 3 or later (see LICENSE.md).
 // The actual queue/string/codec/util sources are linked with this controlled
 // socket transport, excluding CSocket.cpp. No network or production API seam.
 
 #include <CFileQueue.h>
+#include <IEnums.h>
 #include <algorithm>
 #include <cstdio>
 #include <string>
@@ -172,6 +173,47 @@ int CSocket::sendData(const char* data, unsigned int* remaining)
     return static_cast<int>(sent);
 }
 
+// Seihai 2026-11-18: a large file already being sent moves to the normal queue in order,
+// up to its PLO_LARGEFILEEND, and the next file stays in the file queue.
+CString gcharPacket(int id, const char* body)
+{
+    return CString() >> (char)id << body;
+}
+
+void largeFileMoveCase()
+{
+    CSocket socket;
+    resetTransport();
+    CFileQueue queue(&socket);
+    setup(queue, ENCRYPT_GEN_1, Gen5Steps::PerStartedGroup);
+    queue.addPacket(PacketQueue::FILE, gcharPacket(PLO_LARGEFILESTART, "big.png"));
+    queue.addPacket(PacketQueue::FILE, gcharPacket(PLO_LARGEFILESIZE, "SIZE"));
+    queue.addPacket(PacketQueue::FILE, gcharPacket(PLO_FILE, "CHUNK1"));
+    queue.addPacket(PacketQueue::FILE, gcharPacket(PLO_LARGEFILEEND, "big.png"));
+    queue.addPacket(PacketQueue::FILE, gcharPacket(PLO_FILE, "OTHERFILE"));
+
+    // One call sends the start of the large file only.
+    queue.sendCompress();
+    check(transport.wire.find("big.png") != std::string::npos, "large file start not sent");
+    check(transport.wire.find("SIZE") == std::string::npos, "more than one file packet in the first frame");
+
+    queue.moveInProgressFileTransferToNormalQueue();
+    queue.addPacket(PacketQueue::NORMAL, gcharPacket(PLO_PLAYERPROPS, "NORMAL"));
+    queue.sendCompress();
+    const auto size = transport.wire.find("SIZE");
+    const auto chunk = transport.wire.find("CHUNK1");
+    const auto end = transport.wire.rfind("big.png");
+    const auto normal = transport.wire.find("NORMAL");
+    check(size != std::string::npos && chunk != std::string::npos && normal != std::string::npos, "moved packets not sent");
+    check(size < chunk && chunk < end && end < normal, "moved packets out of order");
+    check(transport.wire.find("OTHERFILE") == std::string::npos, "file queued behind the large file sent while normal holds a file");
+
+    // Once the normal queue has no file packets left, the other file goes out.
+    queue.sendCompress();
+    queue.sendCompress();
+    check(transport.wire.find("OTHERFILE") != std::string::npos, "file queue stalled after the move");
+}
+
 int main()
 {
     int cases = 0;
@@ -186,6 +228,7 @@ int main()
     // Simulated negative error on the initial/new-frame send path as well.
     recoveryCase(ENCRYPT_GEN_5, Gen5Steps::PerStartedGroup, 100, -1);
     cleanupCases();
+    largeFileMoveCase();
     std::printf("FileQueueSendTest: %d recovery cases plus error/cleanup checks; %d failures\n", cases + 1, failures);
     return failures == 0 ? 0 : 1;
 }

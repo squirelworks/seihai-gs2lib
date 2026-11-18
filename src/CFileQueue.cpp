@@ -33,6 +33,14 @@ namespace
     // PLO_OTHERPLPROPS are not queued. The next update still goes out after
     // the queue drains, and a crowd of walkers cannot grow it without bound.
     constexpr size_t kPositionFanoutCap = 4096;
+
+    // A queued packet starts with its id as a GCHAR (id + 32), raw packets included.
+    int queuedPacketId(const CString& packet)
+    {
+        if (packet.isEmpty())
+            return -1;
+        return static_cast<unsigned char>(packet[0]) - 0x20;
+    }
 }
 
 void CFileQueue::addPacket(const PacketQueue queue, const CString& packet)
@@ -66,15 +74,16 @@ void CFileQueue::moveInProgressFileTransferToNormalQueue()
     if (!m_currentlySendingLargeFile)
         return;
 
+    // Seihai: the rest of the file being sent is at the front of the file queue. Move it in
+    // order, up to and including its PLO_LARGEFILEEND. Upstream walks from the back, which
+    // moves the last queued packet first and reverses the order.
     while (!m_fileBuffer.empty())
     {
-        bool isFinalPacket = false;
-        auto& packet = m_fileBuffer.back();
-        if (!packet.second.isEmpty() && packet.second[0] == PLO_LARGEFILEEND)
-            isFinalPacket = true;
+        auto packet = std::move(m_fileBuffer.front());
+        m_fileBuffer.pop_front();
+        const bool isFinalPacket = queuedPacketId(packet.second) == PLO_LARGEFILEEND;
 
         m_normalBuffer.emplace_back(std::move(packet));
-        m_fileBuffer.pop_back();
         if (isFinalPacket)
             break;
     }
@@ -140,20 +149,19 @@ void CFileQueue::sendCompress(const bool forceSendFiles)
         // ReSharper disable once CppUseElementsView
         for (const auto& [raw, packet] : m_normalBuffer)
         {
-            if (!packet.isEmpty())
-            {
-                if (packet[0] == PLO_LARGEFILESTART || packet[0] == PLO_LARGEFILESIZE || packet[0] == PLO_FILE || packet[0] == PLO_LARGEFILEEND)
-                    return true;
-            }
+            // Seihai: compare the decoded id. Upstream compared the GCHAR byte with the enum.
+            const int id = queuedPacketId(packet);
+            if (id == PLO_LARGEFILESTART || id == PLO_LARGEFILESIZE || id == PLO_FILE || id == PLO_LARGEFILEEND)
+                return true;
         }
         return false;
     };
     auto updateLargeFileStatus = [this](const CString& packet)
     {
-        if (packet.isEmpty()) return;
-        if (packet[0] == PLO_LARGEFILESTART)
+        const int id = queuedPacketId(packet);
+        if (id == PLO_LARGEFILESTART)
             m_currentlySendingLargeFile = true;
-        else if (packet[0] == PLO_LARGEFILEEND)
+        else if (id == PLO_LARGEFILEEND)
             m_currentlySendingLargeFile = false;
     };
 
