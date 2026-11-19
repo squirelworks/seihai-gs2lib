@@ -1,4 +1,4 @@
-// Modified by the Seihai project, 2026-10-31 (5.007 label 2026-11-12, Mac ids and catalogue tokens 2026-11-13, RC/NC bounds 2026-11-14, frame lengths 2026-11-15): see CHANGES-SEIHAI.md.
+// Modified by the Seihai project, 2026-10-31 (5.007 label 2026-11-12, Mac ids and catalogue tokens 2026-11-13, RC/NC bounds 2026-11-14, frame lengths 2026-11-15, 6.1.1.3 id 2026-11-19): see CHANGES-SEIHAI.md.
 /*
  * include/IUtil.cpp
  *
@@ -142,6 +142,7 @@ static constexpr const char* const clientVersions[] =
 	"G3D2505C",     // CLVER_6_034,
 	"G3D0311C",		// CLVER_6_037,
 	"G3D0511C",		// CLVER_6_037_LINUX,
+	"GNP1905C",		// CLVER_6_113, Seihai
 
 	"G3D04048",		// CLVER_IPHONE_1_1 (Seihai: Belote 1.2 and 1.50 send this)
 	"G3D18010",		// CLVER_IPHONE_1_5
@@ -277,6 +278,7 @@ static constexpr const char* const clientVersionString[] =
 	"6.034/6.035",		// CLVER_6_034,
 	"6.037",		// CLVER_6_037,
 	"6.037 (Linux)",		// CLVER_6_037_LINUX,
+	"6.1.1.3",		// CLVER_6_113, Seihai
 
 	"iPhone 1.1",	// CLVER_IPHONE_1_1
 	"iPhone 1.5",	// CLVER_IPHONE_1_5
