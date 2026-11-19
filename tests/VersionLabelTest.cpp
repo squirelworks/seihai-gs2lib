@@ -1,4 +1,4 @@
-// Seihai project, 2026-11-12, 2026-11-13, 2026-11-14: see CHANGES-SEIHAI.md.
+// Seihai project, 2026-11-12, 2026-11-13, 2026-11-14, 2026-11-19: see CHANGES-SEIHAI.md.
 //
 // This file is part of the Seihai fork of gs2lib and is released under the
 // GNU General Public License version 3 or later (see LICENSE.md).
@@ -90,6 +90,7 @@ int main()
 		{ "G3D28090", CLVER_6_00_LINUX_BETA, "6.00 beta (Linux)" },
 		{ "G3D3107A", CLVER_6_015_MAC, "6.015 (Mac)" },
 		{ "G3D0108A", CLVER_6_01_LINUX, "6.01 (Linux)" },
+		{ "GNP1905C", CLVER_6_113, "6.1.1.3" },
 		{ "G3D0208A", CLVER_IPHONE_CLASSICPLUS_1_13, "iPhone Classic+ 1.13" },
 	};
 	for (const Row& r : catalogue)

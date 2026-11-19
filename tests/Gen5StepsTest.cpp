@@ -132,28 +132,41 @@ int main()
         }
     }
 
-    // reset() keeps the rule; only 5.12 rounds down.
+    // reset() keeps the rule. Every gen-5 client rounds the compressed step
+    // down, so gen5StepsForClient returns PerWholeGroup for all of them.
     {
         auto c = codec(0x4B, Gen5Steps::PerWholeGroup);
         c.reset(0x10);
         CHECK(c.getGen5Steps() == Gen5Steps::PerWholeGroup);
+        // Every gen-5 client rounds down. Read in the binaries (Tiger lab
+        // 2026-11-13 and 2026-11-19): the Windows 4.04r2 and 4.20r8 engine
+        // DLLs, the Mac PowerPC 4.04r2, 5.12 and G3D27076 ("4.20r6" label, a
+        // 4.10r2-era build) programs, CLVER_5_12/_MAC, and 6.03r7 (Linux
+        // G3D0511C, engine-identical to the Windows build). No gen-5 build has
+        // been shown to round up; 5.00r7 and 5.24r4 are the only two not read.
         CHECK(CEncryption::gen5StepsForClient(CLVER_5_12) == Gen5Steps::PerWholeGroup);
-        CHECK(CEncryption::gen5StepsForClient(CLVER_5_07) == Gen5Steps::PerStartedGroup);
-        CHECK(CEncryption::gen5StepsForClient(CLVER_5_31x) == Gen5Steps::PerStartedGroup);
-        CHECK(CEncryption::gen5StepsForClient(CLVER_2_22) == Gen5Steps::PerStartedGroup);
-        CHECK(CEncryption::gen5StepsForClient(CLVER_UNKNOWN) == Gen5Steps::PerStartedGroup);
-        CHECK(getVersionID("G3D14097") == CLVER_5_12);
-        // The Mac PowerPC 4.04r2 and 5.12 round down too (read in their
-        // binaries, Tiger lab 2026-11-13); 4.20r6 Mac was not read.
+        CHECK(CEncryption::gen5StepsForClient(CLVER_5_07) == Gen5Steps::PerWholeGroup);
+        CHECK(CEncryption::gen5StepsForClient(CLVER_5_31x) == Gen5Steps::PerWholeGroup);
+        CHECK(CEncryption::gen5StepsForClient(CLVER_UNKNOWN) == Gen5Steps::PerWholeGroup);
+        // 2.22 predates the gen-5 cipher (it is gen-3); the value is moot for a
+        // real 2.22 client, but the function still reports the gen-5 rule.
+        CHECK(CEncryption::gen5StepsForClient(CLVER_2_22) == Gen5Steps::PerWholeGroup);
+        CHECK(CEncryption::gen5StepsForClient(CLVER_4_042) == Gen5Steps::PerWholeGroup);
         CHECK(CEncryption::gen5StepsForClient(CLVER_4_042_MAC) == Gen5Steps::PerWholeGroup);
+        CHECK(CEncryption::gen5StepsForClient(CLVER_4_102_MAC) == Gen5Steps::PerWholeGroup);
+        CHECK(CEncryption::gen5StepsForClient(CLVER_4_208) == Gen5Steps::PerWholeGroup);
         CHECK(CEncryption::gen5StepsForClient(CLVER_5_12_MAC) == Gen5Steps::PerWholeGroup);
-        CHECK(CEncryption::gen5StepsForClient(CLVER_4_206_MAC) == Gen5Steps::PerStartedGroup);
-        CHECK(CEncryption::gen5StepsForClient(CLVER_4_042) == Gen5Steps::PerStartedGroup);
+        // The genuine 4.20r6 Mac (G3D21126) was not read, but it is bracketed
+        // by read round-down builds, so it rounds down with the rest.
+        CHECK(CEncryption::gen5StepsForClient(CLVER_4_206_MAC) == Gen5Steps::PerWholeGroup);
+        CHECK(CEncryption::gen5StepsForClient(CLVER_5_24) == Gen5Steps::PerWholeGroup);
+        CHECK(getVersionID("G3D14097") == CLVER_5_12);
         CHECK(getVersionID("G3D18026") == CLVER_4_042_MAC);
         CHECK(getVersionID("G3D15097") == CLVER_5_12_MAC);
-        // 5.24 rounds up like 5.31x: the lab gserver ran it as G3D26090 (Oct 2026).
+        CHECK(getVersionID("G3D17026") == CLVER_4_042);
+        CHECK(getVersionID("G3D20126") == CLVER_4_208);
+        CHECK(getVersionID("G3D27076") == CLVER_4_102_MAC);
         CHECK(getVersionID("G3D15010") == CLVER_5_24);
-        CHECK(CEncryption::gen5StepsForClient(CLVER_5_24) == Gen5Steps::PerStartedGroup);
     }
 
     if (failures != 0)

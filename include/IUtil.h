@@ -1,4 +1,4 @@
-// Modified by the Seihai project, 2026-10-31, 2026-11-13: see CHANGES-SEIHAI.md.
+// Modified by the Seihai project, 2026-10-31, 2026-11-13, 2026-11-19: see CHANGES-SEIHAI.md.
 /*
  * include/IUtil.h
  *
@@ -242,6 +242,7 @@ enum
 	CLVER_6_034,
 	CLVER_6_037,
 	CLVER_6_037_LINUX,
+	CLVER_6_113, // Seihai: Graal 6.1.1.3 Windows / 6.11r1 Mac, token GNP1905C (connector-script token; rebuilds send it directly)
 
 	CLVER_IPHONE_1_1,
 	CLVER_IPHONE_1_5,
