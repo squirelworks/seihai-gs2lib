@@ -183,14 +183,21 @@ void CEncryption::applyGen5Steps(const int32_t length)
 
 Gen5Steps CEncryption::gen5StepsForClient(const int versionId) noexcept
 {
-    // 5.12, and the Mac PowerPC 4.04r2 and 5.12: their frame ciphers step a
-    // zlib or bz2 body len >> 2 times (srawi), a raw one (len + 3) >> 2 times
-    // (read in both Mac binaries, Tiger lab 2026-11-13). 4.20r6 Mac was not read.
+    // The 4.x builds and 5.12 step a zlib or bz2 body len >> 2 times (srawi),
+    // a raw one (len + 3) >> 2 times, each at the type's limit. Read in the
+    // binaries (Tiger lab 2026-11-13): the Windows 4.04r2 and 4.20r8 engine
+    // DLLs, and the Mac PowerPC 4.04r2, 5.12 and G3D27076 (labelled "4.20r6"
+    // in the downloads, a 4.10r2-era build) programs. CLVER_5_12 (Windows
+    // 5.12) too. The genuine 4.20r6 Mac (CLVER_4_206_MAC, G3D21126, binary
+    // 2006-12-21) was not read and keeps the round-up default.
     switch (versionId)
     {
-        case CLVER_5_12:
-        case CLVER_4_042_MAC:
-        case CLVER_5_12_MAC:
+        case CLVER_4_042:      // Graal 4.04r2 Windows (G3D17026)
+        case CLVER_4_042_MAC:  // Graal 4.04r2 Mac PowerPC (G3D18026)
+        case CLVER_4_102_MAC:  // "4.20r6"/4.10r2-era Mac PowerPC (G3D27076)
+        case CLVER_4_208:      // Graal 4.20r8 Windows (G3D20126)
+        case CLVER_5_12:       // Graal 5.12 Windows (G3D14097)
+        case CLVER_5_12_MAC:   // Graal 5.12 Mac PowerPC (G3D15097)
             return Gen5Steps::PerWholeGroup;
         default:
             return Gen5Steps::PerStartedGroup;

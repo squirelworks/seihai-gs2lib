@@ -10,7 +10,7 @@ bug here usually shows up as a crash or a dropped client in
 own list is in its
 [KNOWN-ISSUES.md](https://github.com/squirelworks/seihai-gserver-v2/blob/seihai/KNOWN-ISSUES.md).
 
-Last checked against branch `seihai` at the #35 merge (2026-11-19), which
+Last checked against branch `seihai` at the #38 merge (2026-11-19), which
 includes upstream gs2lib through `6dd10ff`.
 
 **Short version:** there is no open, confirmed bug in this library today. What
@@ -141,10 +141,12 @@ adding a comment with the evidence beside upstream's name is welcome.
 
 ## Behaviour that looks like a bug but is intended
 
-- **5.12 rounds the gen-5 step down.** Every other client, and stock gs2lib,
-  rounds up. 5.12 (and the Mac 4.04r2 and 5.12) really do round down on zlib
-  and bzip2 bodies; with the stock rule, 5.12 stops being read after its first
-  short compressed body. See `Gen5StepsTest`.
+- **Some clients round the gen-5 step down.** Stock gs2lib rounds up for every
+  client. Windows 4.04r2, 4.20r8 and 5.12, and the Mac PowerPC 4.04r2, 4.10r2-era
+  and 5.12 builds, really do round down on zlib and bzip2 bodies (their frame
+  ciphers were read on 2026-11-13). With the stock rule the keystream falls out
+  of step on the first short compressed body, and the client stops being read.
+  See `Gen5StepsTest`.
 - **`getVersionString` returns `"unknown"` for an unknown token**, not null.
   Upstream returns null, and its callers never check, so an unknown token used
   to abort the server.
@@ -163,7 +165,7 @@ upstream's current head before relying on it.
 | Bug | Fixed here | What happens without the fix |
 |---|---|---|
 | `getVersionString` returns null for an unknown token | 2026-10-31 | The login log line and `loadAllowedVersions` use the null, and the server aborts. |
-| Gen-5 step rule is round-up for every client | 2026-10-31 (`Gen5Steps`) | 5.12 stops being read after its first short compressed body. |
+| Gen-5 step rule is round-up for every client | 2026-10-31, widened 2026-11-19 (`Gen5Steps`) | 4.04r2, 4.20r8 and 5.12 stop being read after their first short compressed body. |
 | No `PLO_OTHERPLPROPS` cap | 2026-11-01 | The queue of position updates grows without bound with many walking players. |
 | Socket created with the wrong address family | 2026-11-14 (`SocketFamilyTest`) | IPv6 and `ANY` addresses are passed to an IPv4 socket, so they cannot bind or connect. |
 | Version-label lookup reads past the RC and NC tables | 2026-11-14 (`VersionLabelTest`) | An unknown or cross-table RC/NC token reads past the shorter table (ASan: global-buffer-overflow). |
