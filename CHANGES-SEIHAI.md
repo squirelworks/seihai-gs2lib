@@ -10,6 +10,7 @@ pins since 2026-11-17). Used by
 
 | Change | Files | Checked with |
 |---|---|---|
+| Versioning policy for the Seihai suite: `VERSIONING.md` says this fork makes no releases (seihai-gserver-v2 pins a commit and ships its source), and that a release, if a second consumer ever needs one, is `<upstream version>-seihai.N`. | `VERSIONING.md`, `CHANGES-SEIHAI.md` | Docs only. |
 | macOS at release time (#28): `seihai-tests` gains a `macos` job that builds the library and runs the unit tests on a GitHub macOS 15 runner, on `v*` tags and manual runs only. Pushes and pull requests still run Linux and Windows only. seihai-gserver-v2's release workflow runs the same tests for its pinned gs2lib commit. | `.github/workflows/seihai-tests.yml`, `README.md`, `CHANGES-SEIHAI.md` | Workflow syntax only; the job first runs on the next manual dispatch or tag. |
 
 ## 2026-11-18
