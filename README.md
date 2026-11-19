@@ -72,7 +72,11 @@ weekly `.github/workflows/fuzz.yml` job (#27).
 ### macOS builds
 
 macOS is built and tested on the lab's Sequoia (macOS 15) VM with the macOS
-CMake preset and the tests the Linux job runs.
+CMake preset and the tests the Linux job runs. It does not run in CI on every
+push. A `v*` tag, or a manual run of the `seihai-tests` workflow (Actions, Run
+workflow), also builds the library and runs the unit tests on a GitHub macOS
+runner, and seihai-gserver-v2's release workflow runs them again for the
+commit it pins (#28).
 
 ## Using it from CMake
 

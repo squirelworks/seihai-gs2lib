@@ -1,11 +1,14 @@
-# Seihai project, 2026-10-31 (Windows job 2026-11-04; macOS moved to the lab VM 2026-11-12): see CHANGES-SEIHAI.md.
+# Seihai project, 2026-10-31 (Windows job 2026-11-04; macOS moved to the lab VM 2026-11-12; macOS release job 2026-11-19): see CHANGES-SEIHAI.md.
 name: seihai-tests
 
 on:
   push:
     branches: [seihai]
+    tags: ['v*']
   pull_request:
     branches: [seihai]
+  # A manual run also builds and tests on macOS (#28).
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -24,8 +27,25 @@ jobs:
       - name: Test
         run: ctest --test-dir build --output-on-failure
 
-  # macOS is built and tested on the lab Sequoia VM with the macOS CMake
-  # preset, not on GitHub runners (README.md, "macOS builds").
+  # macOS does not run on every push: day to day it is built and tested on
+  # the lab Sequoia VM (README.md, "macOS builds"). It must build at release
+  # time, so a tag (v*) or a manual run builds the library and runs the same
+  # unit tests on a GitHub macOS runner (#28). seihai-gserver-v2's release
+  # workflow runs these tests again for the gs2lib commit it pins.
+  macos:
+    if: ${{ startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch' }}
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install build tools
+        run: brew install ninja
+      # zlib and bzip2 come from the macOS SDK.
+      - name: Configure
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Debug -DGS2LIB_TESTS=ON
+      - name: Build
+        run: cmake --build build -j
+      - name: Test
+        run: ctest --test-dir build --output-on-failure
 
   windows:
     runs-on: windows-latest

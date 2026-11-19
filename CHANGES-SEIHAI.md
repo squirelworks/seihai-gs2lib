@@ -6,6 +6,12 @@ Mirror of [gs2lib](https://bitbucket.org/xtjoeytx/gs2lib) (GPL-3.0, see `LICENSE
 pins since 2026-11-17). Used by
 [seihai-gserver-v2](https://github.com/squirelworks/seihai-gserver-v2).
 
+## 2026-11-19
+
+| Change | Files | Checked with |
+|---|---|---|
+| macOS at release time (#28): `seihai-tests` gains a `macos` job that builds the library and runs the unit tests on a GitHub macOS 15 runner, on `v*` tags and manual runs only. Pushes and pull requests still run Linux and Windows only. seihai-gserver-v2's release workflow runs the same tests for its pinned gs2lib commit. | `.github/workflows/seihai-tests.yml`, `README.md`, `CHANGES-SEIHAI.md` | Workflow syntax only; the job first runs on the next manual dispatch or tag. |
+
 ## 2026-11-18
 
 | Change | Files | Checked with |
