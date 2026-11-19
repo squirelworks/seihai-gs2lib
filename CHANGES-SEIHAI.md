@@ -10,6 +10,7 @@ pins since 2026-11-17). Used by
 
 | Change | Files | Checked with |
 |---|---|---|
+| Docs only: `KNOWN-ISSUES.md` for outside contributors. No confirmed open bug today; it lists the open work where bugs are likely (fuzzing, #27, and its overlap with seihai-gserver-v2#87; unknown tokens; unnamed packet ids), behaviour that looks wrong but is intended, and the bugs fixed here that upstream may still have. README links it. | `KNOWN-ISSUES.md`, `README.md`, `CHANGES-SEIHAI.md` | Read against `seihai` at the #35 merge, `CHANGES-SEIHAI.md` and the fuzz workflow's runs. No build. |
 | macOS at release time (#28): `seihai-tests` gains a `macos` job that builds the library and runs the unit tests on a GitHub macOS 15 runner, on `v*` tags and manual runs only. Pushes and pull requests still run Linux and Windows only. seihai-gserver-v2's release workflow runs the same tests for its pinned gs2lib commit. | `.github/workflows/seihai-tests.yml`, `README.md`, `CHANGES-SEIHAI.md` | Workflow syntax only; the job first runs on the next manual dispatch or tag. |
 
 ## 2026-11-18

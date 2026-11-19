@@ -15,6 +15,9 @@ Part of the Seihai server stack:
 [seihai-gserver-v2](https://github.com/squirelworks/seihai-gserver-v2) (GPL fork of GServer-v2, the main user of this library) ·
 client: [seihai](https://github.com/squirelworks/seihai).
 
+Known gaps, open fuzzing work and bugs fixed here that upstream may still have
+are in [KNOWN-ISSUES.md](KNOWN-ISSUES.md).
+
 ## What is in it
 
 | Part | Files | What it does |
