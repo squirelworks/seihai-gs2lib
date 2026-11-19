@@ -154,11 +154,11 @@ typedef enum PlayerToServer
 	PLI_RC_LARGEFILESTART		= 155,
 	PLI_RC_LARGEFILEEND			= 156,
 
-	PLI_UPDATEGANI				= 157,	// Something to do with ganis.		-- Likely: PLI_UPDATEGANI [similar to UPDATECLASS], replies with 253? multiple replies in one
-	PLI_UPDATESCRIPT			= 158,	// {158}{script} Requests a script from the server.
+	PLI_UPDATEGANI				= 157,	// {157}{INT5 crc32}{name} - Gani update check.
+	PLI_UPDATEWEAPON			= 158,	// {158}{script} - Weapon update check.
 	PLI_UPDATEPACKAGEREQUESTFILE= 159,	// {159]{(char)order?]{packagefilename}{modtime}
 	PLI_RC_FOLDERDELETE			= 160,
-	PLI_UPDATECLASS				= 161,	// {161}{INT5 modtime}{name} Class request.
+	PLI_UPDATECLASS				= 161,	// {161}{INT5 crc32}{name} - Class update request.
 	PLI_PONG					= 162,	// {162}{GCHAR type}{GSHORT value} - type is always 1 on a pong reply to PLO_PING.
 	PLI_SET_ENC_KEY				= 252,	// Set AES / RC4 encryption key and init vector
 	PLI_BUNDLE					= 253	// Bundled packets contain multiple packets
@@ -267,8 +267,8 @@ typedef enum ServerToPlayer
 	PLO_NPCBYTECODE				= 131,	// {131}{GINT3 npcId}{bytecode} - [RAW]
 	PLO_WEAPONBYTECODE			= 132,	// {132}{GSTRING weaponName}{bytecode} - [RAW] v4 through v5, send weapon FIRST
 	PLO_CLASSBYTECODE			= 133,	// {133}{GSTRING className}{bytecode} - [RAW] v4 through v5
-	PLO_GANISCRIPT				= 134,	// Might be used for package downloads. Looks to send gani scripts to client
-	PLO_WEAPONBYTECODE2			= 140,	// {140}{GSHORT info_length}{info}{bytecode}
+	PLO_GANIBYTECODE			= 134,	// {134}{GSTRING ganiName}{bytecode} - [RAW] v4+
+	PLO_HEADEREDBYTECODE		= 140,	// {140}{GSHORT info_length}{info}{bytecode}
 	PLO_NPCDEL2					= 150,	// {150}{GSTRING level}{GINT3 npcid}
 	PLO_HIDENPCS				= 151,	// {151} - This might delete all npcs with an id under 1000.
 	PLO_SAY2					= 153,	// {153}{text} - Also used for signs.
@@ -311,9 +311,9 @@ typedef enum ServerToPlayer
 	PLO_SERVERLISTCONNECTED		= 190,	// {190} - the gserver connected to the listserver, informing the client it can log into IRC. NOTE: Sending this packet makes the client login to irc, request bantypes, pmguilds, pmservers, globalpms, buddytracking and stuff... Mainly tied to setText
 	PLO_SHOOT2					= 191,	// Valid message in 5.07 and 6.037.  The code it uses is unique. -Codr
 	PLO_NC_WEAPONGET			= 192,	// {192}{GSTRING name}{GSTRING image}{script}  Codr note: Unhandled by 5.07+.
-	PLO_WEAPONHASH				= 193,	// {193}{GINT5 crc}{STRING name} - If the client's weapon script doesn't match, it sends PLI_UPDATESCRIPT in response.
+	PLO_WEAPONHASH				= 193,	// {193}{GINT5 crc}{STRING name} - If the client's weapon script doesn't match, it sends PLI_UPDATEWEAPON in response.
 	PLO_RESETCLIENT				= 194,	// {194} - Deletes non-login weapons and classes, deletes all NPCs, [v5] clears every loaded level and cache, [v6] and resets the main game object.
-	PLO_LOADGANI				= 195,	// {195}{GSTRING gani}{STRINGLIST ?} - The stringlist is SETBACKTO, but may contain other things.
+	PLO_LOADGANI				= 195,	// {195}{GSTRING gani}{STRINGLIST overrides} - Directs the client to load the gani, appending the overrides to the gani file.
 	PLO_LOADSCRIPT				= 197,	// {197}{STRINGLIST type,name,saveToDisk,desKey,crc32} type: weapon/npc/class/gani, saveToDisk: 1/0, desKey: 64-bit key split in two {GINT5}{GINT5}, crc32: {GINT5}
 	PLO_SERVEROPTIONS			= 198,	// {198}{GINT5 serverOptions}
 	PLO_SET_ENC_KEY				= 252,	// Set AES / RC4 encryption key and init vector
