@@ -143,14 +143,22 @@ int main()
         CHECK(CEncryption::gen5StepsForClient(CLVER_2_22) == Gen5Steps::PerStartedGroup);
         CHECK(CEncryption::gen5StepsForClient(CLVER_UNKNOWN) == Gen5Steps::PerStartedGroup);
         CHECK(getVersionID("G3D14097") == CLVER_5_12);
-        // The Mac PowerPC 4.04r2 and 5.12 round down too (read in their
-        // binaries, Tiger lab 2026-11-13); 4.20r6 Mac was not read.
+        // The 4.x builds round down too, read in their binaries (Tiger lab
+        // 2026-11-13): the Windows 4.04r2 and 4.20r8 engine DLLs and the Mac
+        // PowerPC 4.04r2, 5.12 and G3D27076 ("4.20r6" label, a 4.10r2-era
+        // build) programs.
+        CHECK(CEncryption::gen5StepsForClient(CLVER_4_042) == Gen5Steps::PerWholeGroup);
         CHECK(CEncryption::gen5StepsForClient(CLVER_4_042_MAC) == Gen5Steps::PerWholeGroup);
+        CHECK(CEncryption::gen5StepsForClient(CLVER_4_102_MAC) == Gen5Steps::PerWholeGroup);
+        CHECK(CEncryption::gen5StepsForClient(CLVER_4_208) == Gen5Steps::PerWholeGroup);
         CHECK(CEncryption::gen5StepsForClient(CLVER_5_12_MAC) == Gen5Steps::PerWholeGroup);
+        // The genuine 4.20r6 Mac (G3D21126) was not read and keeps round-up.
         CHECK(CEncryption::gen5StepsForClient(CLVER_4_206_MAC) == Gen5Steps::PerStartedGroup);
-        CHECK(CEncryption::gen5StepsForClient(CLVER_4_042) == Gen5Steps::PerStartedGroup);
         CHECK(getVersionID("G3D18026") == CLVER_4_042_MAC);
         CHECK(getVersionID("G3D15097") == CLVER_5_12_MAC);
+        CHECK(getVersionID("G3D17026") == CLVER_4_042);
+        CHECK(getVersionID("G3D20126") == CLVER_4_208);
+        CHECK(getVersionID("G3D27076") == CLVER_4_102_MAC);
         // 5.24 rounds up like 5.31x: the lab gserver ran it as G3D26090 (Oct 2026).
         CHECK(getVersionID("G3D15010") == CLVER_5_24);
         CHECK(CEncryption::gen5StepsForClient(CLVER_5_24) == Gen5Steps::PerStartedGroup);
