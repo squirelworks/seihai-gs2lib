@@ -183,25 +183,21 @@ void CEncryption::applyGen5Steps(const int32_t length)
 
 Gen5Steps CEncryption::gen5StepsForClient(const int versionId) noexcept
 {
-    // The 4.x builds and 5.12 step a zlib or bz2 body len >> 2 times (srawi),
-    // a raw one (len + 3) >> 2 times, each at the type's limit. Read in the
-    // binaries (Tiger lab 2026-11-13): the Windows 4.04r2 and 4.20r8 engine
-    // DLLs, and the Mac PowerPC 4.04r2, 5.12 and G3D27076 (labelled "4.20r6"
-    // in the downloads, a 4.10r2-era build) programs. CLVER_5_12 (Windows
-    // 5.12) too. The genuine 4.20r6 Mac (CLVER_4_206_MAC, G3D21126, binary
-    // 2006-12-21) was not read and keeps the round-up default.
-    switch (versionId)
-    {
-        case CLVER_4_042:      // Graal 4.04r2 Windows (G3D17026)
-        case CLVER_4_042_MAC:  // Graal 4.04r2 Mac PowerPC (G3D18026)
-        case CLVER_4_102_MAC:  // "4.20r6"/4.10r2-era Mac PowerPC (G3D27076)
-        case CLVER_4_208:      // Graal 4.20r8 Windows (G3D20126)
-        case CLVER_5_12:       // Graal 5.12 Windows (G3D14097)
-        case CLVER_5_12_MAC:   // Graal 5.12 Mac PowerPC (G3D15097)
-            return Gen5Steps::PerWholeGroup;
-        default:
-            return Gen5Steps::PerStartedGroup;
-    }
+    // Every Graal build whose gen-5 frame cipher has been disassembled steps a
+    // zlib or bz2 body floor(len/4) times (srawi ...,2), capped at the type's
+    // limit of 4, and a raw body (len + 3) >> 2 times, cap 12 -- i.e. the
+    // compressed step rounds DOWN. Confirmed in the binaries: the Windows
+    // 4.04r2 and 4.20r8 engine DLLs, the Mac PowerPC 4.04r2, 5.12 and G3D27076
+    // ("4.20r6"-labelled, a 4.10r2-era build) programs, and CLVER_5_12/_MAC
+    // (Tiger lab 2026-11-13); and 6.03r7, read 2026-11-19 from the Linux x64
+    // build (G3D0511C, platform-identical engine to the Windows G3D0311C):
+    // srawi ...,2 at 0x62050e, cap 4. No gen-5 build has ever been shown to
+    // round up -- the old PerStartedGroup default was the legacy GS2Emu
+    // behaviour, not a client read -- so round-down is the rule for every
+    // gen-5 client. The two builds not machine-read (5.00r7, 5.24r4) are both
+    // bracketed by read round-down builds. 2.22 predates the gen-5 cipher.
+    (void)versionId;
+    return Gen5Steps::PerWholeGroup;
 }
 
 int CEncryption::limitFromType(const uint8_t type)
