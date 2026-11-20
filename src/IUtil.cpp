@@ -53,7 +53,7 @@ static constexpr const char* const clientVersions[] =
 	"",				// CLVER_UNKNOWN,
 	"",				// CLVER_NPCSERVER,
 
-    "G2N15041",     // CLVER_NW_2_02,
+	"G2N15041",     // CLVER_NW_2_02,
 
 	"",				// CLVER_1_20,
 	"GSERV007",		// CLVER_1_21,
@@ -84,11 +84,11 @@ static constexpr const char* const clientVersions[] =
 	"GNW13110",		// CLVER_1_411,
 
 	"GNW24011",		// CLVER_2_0,
-    "GNW23021",     // CLVER_2_01,
-    "GNW15041",     // CLVER_2_02,
-    "GNW20041",     // CLVER_2_022,
-    "GNW06051",     // CLVER_2_03,
-    "GNW24061",     // CLVER_2_04,
+	"GNW23021",     // CLVER_2_01,
+	"GNW15041",     // CLVER_2_02,
+	"GNW20041",     // CLVER_2_022,
+	"GNW06051",     // CLVER_2_03,
+	"GNW24061",     // CLVER_2_04,
 	"GNW03081",		// CLVER_2_052,
 	"GNW31101",		// CLVER_2_1,
 	"GNW01012",		// CLVER_2_12,
@@ -154,7 +154,7 @@ static constexpr const char* const rcVersions[] =
 {
 	"",				// RCVER_UNKNOWN,
 	// GSERV019 = 1.0?
-    // GSERV021 = graalnm24/26
+	// GSERV021 = graalnm24/26
 	"GSERV023",		// RCVER_1_010,
 	"GSERV024",		// RCVER_1_1,
 	"GSERV025",		// RCVER_2,
@@ -166,7 +166,7 @@ static constexpr const char* const clientVersionString[] =
 	"",			// CLVER_UNKNOWN,
 	"(npcserver)",	// CLVER_NPCSERVER,
 
-    "NW 2.02",  // CLVER_NW_2_02,
+	"NW 2.02",  // CLVER_NW_2_02,
 
 	"1.20",		// CLVER_1_20,
 	"1.21",		// CLVER_1_21,
@@ -197,11 +197,11 @@ static constexpr const char* const clientVersionString[] =
 	"1.41r1",	// CLVER_1_411,
 
 	"2.0",		// CLVER_2_0,
-    "2.01",     // CLVER_2_01,
-    "2.02",     // CLVER_2_02,
-    "2.02r2",   // CLVER_2_022,
-    "2.03",     // CLVER_2_03,
-    "2.04",     // CLVER_2_04,
+	"2.01",     // CLVER_2_01,
+	"2.02",     // CLVER_2_02,
+	"2.02r2",   // CLVER_2_022,
+	"2.03",     // CLVER_2_03,
+	"2.04",     // CLVER_2_04,
 	"2.05r2",	// CLVER_2_05,
 	"2.1",		// CLVER_2_1,
 	"2.12",		// CLVER_2_12,
@@ -268,170 +268,164 @@ static constexpr const char* const rcVersionString[] =
 };
 // clang-format on
 
-int getVersionID(const CString& version)
-{
-    int i = 0;
-    while (clientVersions[i] != nullptr)
-    {
-        if (version == CString(clientVersions[i]))
-            return i;
-        ++i;
-    }
-    return CLVER_UNKNOWN;
-}
-
 const char* getVersionString(const CString& version, const int type)
 {
-    int i = 0;
-    while (clientVersions[i] != nullptr)
-    {
-        if ((type & PLTYPE_ANYCLIENT) != 0 || (type & PLTYPE_NPCSERVER) != 0)
-        {
-            if (version == CString(clientVersions[i]))
-                return clientVersionString[i];
-        }
-        else if ((type & PLTYPE_ANYRC) != 0)
-        {
-            if (version == CString(rcVersions[i]))
-                return rcVersionString[i];
-        }
-        else if ((type & PLTYPE_ANYNC) != 0)
-        {
-            if (version == CString(ncVersions[i]))
-                return ncVersionString[i];
-        }
-        ++i;
-    }
-    return "unknown";
+	const char* result = nullptr;
+
+	if ((type & PLTYPE_ANYCLIENT) != 0 || (type & PLTYPE_NPCSERVER) != 0)
+		result = clientVersions[getVersionID(version)];
+
+	if ((type & PLTYPE_ANYRC) != 0)
+		result = rcVersions[getRCVersionID(version)];
+
+	if ((type & PLTYPE_ANYNC) != 0)
+		result = ncVersions[getNCVersionID(version)];
+
+	if (result != nullptr)
+		return result;
+
+	return "unknown";
+}
+
+int getVersionID(const CString& version)
+{
+	int i = 0;
+	while (clientVersions[i] != nullptr)
+	{
+		if (version == CString(clientVersions[i]))
+			return i;
+		++i;
+	}
+	return CLVER_UNKNOWN;
 }
 
 int getNCVersionID(const CString& version)
 {
-    int i = 0;
-    while (ncVersions[i] != nullptr)
-    {
-        if (version == CString(ncVersions[i]))
-            return i;
-        ++i;
-    }
-    return NCVER_UNKNOWN;
+	int i = 0;
+	while (ncVersions[i] != nullptr)
+	{
+		if (version == CString(ncVersions[i]))
+			return i;
+		++i;
+	}
+	return NCVER_UNKNOWN;
 }
 
 int getRCVersionID(const CString& version)
 {
-    int i = 0;
-    while (rcVersions[i] != nullptr)
-    {
-        if (version == CString(rcVersions[i]))
-            return i;
-        ++i;
-    }
-    return RCVER_UNKNOWN;
+	int i = 0;
+	while (rcVersions[i] != nullptr)
+	{
+		if (version == CString(rcVersions[i]))
+			return i;
+		++i;
+	}
+	return RCVER_UNKNOWN;
 }
 
 signed char getColor(const CString& color)
 {
-    signed char i = 0;
-    while (colors[i] != nullptr)
-    {
-        if (color.comparei(CString(colors[i])))
-            return i;
-        ++i;
-    }
-    return -1;
+	signed char i = 0;
+	while (colors[i] != nullptr)
+	{
+		if (color.comparei(CString(colors[i])))
+			return i;
+		++i;
+	}
+	return -1;
 }
 
 CString removeComments(const CString& code, const CString& newLine)
 {
-    CString ret(code);
-    int pos = -1;
+	CString ret(code);
+	int pos = -1;
 
-    // Remove // comments.
-    while ((pos = ret.find("//", pos + 1)) != -1)
-    {
-        // check for urls (http://)
-        if (pos > 0 && ret[pos - 1] == ':')
-            continue;
+	// Remove // comments.
+	while ((pos = ret.find("//", pos + 1)) != -1)
+	{
+		// check for urls (http://)
+		if (pos > 0 && ret[pos - 1] == ':')
+			continue;
 
-        // check for //#CLIENTSIDE
-        if (ret.subString(pos, 13) == "//#CLIENTSIDE")
-            continue;
+		// check for //#CLIENTSIDE
+		if (ret.subString(pos, 13) == "//#CLIENTSIDE")
+			continue;
 
-        int len = ret.find(newLine, pos) - pos;
-        if (len < 0)
-            len = -1;
-        ret.removeI(pos, len);
-    }
+		int len = ret.find(newLine, pos) - pos;
+		if (len < 0)
+			len = -1;
+		ret.removeI(pos, len);
+	}
 
-    // Remove /* ... */ comments.
-    while ((pos = ret.find("/*", pos + 1)) != -1)
-    {
-        int len = ret.find("*/", pos) - pos;
-        if (len < 0)
-            len = -1;
-        ret.removeI(pos, len + 2);
-    }
+	// Remove /* ... */ comments.
+	while ((pos = ret.find("/*", pos + 1)) != -1)
+	{
+		int len = ret.find("*/", pos) - pos;
+		if (len < 0)
+			len = -1;
+		ret.removeI(pos, len + 2);
+	}
 
-    return ret;
+	return ret;
 }
 
 CString removeExtension(const CString& file)
 {
-    const int ePos = file.findl('.');
-    if (ePos == -1)
-        return file;
+	const int ePos = file.findl('.');
+	if (ePos == -1)
+		return file;
 
-    return file.subString(0, ePos);
+	return file.subString(0, ePos);
 }
 
 
 unsigned int webSocketFixOutgoingPacket(CString& packetData)
 {
-    auto* message = new unsigned char[65535 * sizeof(char)];
-    int i;
-    int data_start_index;
+	auto* message = new unsigned char[65535 * sizeof(char)];
+	int i;
+	int data_start_index;
 
-    message[0] = 130;
+	message[0] = 130;
 
-    if (packetData.length() <= 125)
-    {
-        message[1] = (unsigned char)packetData.length();
-        data_start_index = 2;
-    }
-    else if (packetData.length() > 125 && packetData.length() <= 65535)
-    {
-        message[1] = 126;
-        message[2] = (unsigned char)(((int64_t)packetData.length() >> 8) & 255);
-        message[3] = (unsigned char)(((int64_t)packetData.length()) & 255);
-        data_start_index = 4;
-    }
-    else
-    {
-        message[1] = 127;
-        message[2] = (unsigned char)(((int64_t)packetData.length() >> 56) & 255);
-        message[3] = (unsigned char)(((int64_t)packetData.length() >> 48) & 255);
-        message[4] = (unsigned char)(((int64_t)packetData.length() >> 40) & 255);
-        message[5] = (unsigned char)(((int64_t)packetData.length() >> 32) & 255);
-        message[6] = (unsigned char)(((int64_t)packetData.length() >> 24) & 255);
-        message[7] = (unsigned char)(((int64_t)packetData.length() >> 16) & 255);
-        message[8] = (unsigned char)(((int64_t)packetData.length() >> 8) & 255);
-        message[9] = (unsigned char)(((int64_t)packetData.length()) & 255);
-        data_start_index = 10;
-    }
+	if (packetData.length() <= 125)
+	{
+		message[1] = (unsigned char)packetData.length();
+		data_start_index = 2;
+	}
+	else if (packetData.length() > 125 && packetData.length() <= 65535)
+	{
+		message[1] = 126;
+		message[2] = (unsigned char)(((int64_t)packetData.length() >> 8) & 255);
+		message[3] = (unsigned char)(((int64_t)packetData.length()) & 255);
+		data_start_index = 4;
+	}
+	else
+	{
+		message[1] = 127;
+		message[2] = (unsigned char)(((int64_t)packetData.length() >> 56) & 255);
+		message[3] = (unsigned char)(((int64_t)packetData.length() >> 48) & 255);
+		message[4] = (unsigned char)(((int64_t)packetData.length() >> 40) & 255);
+		message[5] = (unsigned char)(((int64_t)packetData.length() >> 32) & 255);
+		message[6] = (unsigned char)(((int64_t)packetData.length() >> 24) & 255);
+		message[7] = (unsigned char)(((int64_t)packetData.length() >> 16) & 255);
+		message[8] = (unsigned char)(((int64_t)packetData.length() >> 8) & 255);
+		message[9] = (unsigned char)(((int64_t)packetData.length()) & 255);
+		data_start_index = 10;
+	}
 
-    for (i = 0; i < packetData.length(); i++)
-    {
-        message[data_start_index + i] = (unsigned char)packetData.text()[i];
-    }
+	for (i = 0; i < packetData.length(); i++)
+	{
+		message[data_start_index + i] = (unsigned char)packetData.text()[i];
+	}
 
-    int newPacketLength = packetData.length() + data_start_index;
+	int newPacketLength = packetData.length() + data_start_index;
 
-    packetData.clear();
-    packetData.write(message, newPacketLength);
+	packetData.clear();
+	packetData.write(message, newPacketLength);
 
-    delete[] message;
+	delete[] message;
 
-    return i;
+	return i;
 }
 
 /**
@@ -481,76 +475,76 @@ unsigned int webSocketFixOutgoingPacket(CString& packetData)
 
 unsigned int webSocketFixIncomingPacket(CString& packetData)
 {
-    unsigned int i, j;
-    unsigned char mask[4];
-    unsigned int packet_length = 0;
-    unsigned int length_code = 0;
-    int index_first_mask = 0;
-    int index_first_data_byte = 0;
+	unsigned int i, j;
+	unsigned char mask[4];
+	unsigned int packet_length = 0;
+	unsigned int length_code = 0;
+	int index_first_mask = 0;
+	int index_first_data_byte = 0;
 
-    auto bytes = packetData.text();
-    const volatile auto code = static_cast<unsigned char>(bytes[0]);
-    const volatile auto is_fin = (code & 0xFF) >> WS_FIN_SHIFT;
-    const volatile auto opcode = (code & 0x0F);
+	auto bytes = packetData.text();
+	const volatile auto code = static_cast<unsigned char>(bytes[0]);
+	const volatile auto is_fin = (code & 0xFF) >> WS_FIN_SHIFT;
+	const volatile auto opcode = (code & 0x0F);
 
-    if (opcode != WS_FR_OP_BIN)
-    {
-        // dst = NULL;
-        if (code == 136)
-        {
-            /* WebSocket client disconnected */
-            return -2;
-        }
-        /* Unknown error */
-        printf("packetData: %d\n", opcode);
-        return -1;
-    }
+	if (opcode != WS_FR_OP_BIN)
+	{
+		// dst = NULL;
+		if (code == 136)
+		{
+			/* WebSocket client disconnected */
+			return -2;
+		}
+		/* Unknown error */
+		printf("packetData: %d\n", opcode);
+		return -1;
+	}
 
-    length_code = bytes[1] & 127;
+	length_code = bytes[1] & 127;
 
-    if (length_code <= 125)
-    {
-        index_first_mask = 2;
+	if (length_code <= 125)
+	{
+		index_first_mask = 2;
 
-        mask[0] = bytes[2];
-        mask[1] = bytes[3];
-        mask[2] = bytes[4];
-        mask[3] = bytes[5];
-    }
-    else if (length_code == 126)
-    {
-        index_first_mask = 4;
+		mask[0] = bytes[2];
+		mask[1] = bytes[3];
+		mask[2] = bytes[4];
+		mask[3] = bytes[5];
+	}
+	else if (length_code == 126)
+	{
+		index_first_mask = 4;
 
-        mask[0] = bytes[4];
-        mask[1] = bytes[5];
-        mask[2] = bytes[6];
-        mask[3] = bytes[7];
-    }
-    else if (length_code == 127)
-    {
-        index_first_mask = 10;
+		mask[0] = bytes[4];
+		mask[1] = bytes[5];
+		mask[2] = bytes[6];
+		mask[3] = bytes[7];
+	}
+	else if (length_code == 127)
+	{
+		index_first_mask = 10;
 
-        mask[0] = bytes[10];
-        mask[1] = bytes[11];
-        mask[2] = bytes[12];
-        mask[3] = bytes[13];
-    }
+		mask[0] = bytes[10];
+		mask[1] = bytes[11];
+		mask[2] = bytes[12];
+		mask[3] = bytes[13];
+	}
 
-    index_first_data_byte = index_first_mask + 4;
+	index_first_data_byte = index_first_mask + 4;
 
-    packet_length = packetData.length() - index_first_data_byte;
+	packet_length = packetData.length() - index_first_data_byte;
 
-    auto* dst = new unsigned char[packet_length];
+	auto* dst = new unsigned char[packet_length];
 
-    for (i = index_first_data_byte, j = 0; i < packetData.length() && j < packet_length; i++, j++)
-    {
-        dst[j] = (unsigned char)bytes[i] ^ mask[j % 4];
-    }
+	for (i = index_first_data_byte, j = 0; i < packetData.length() && j < packet_length; i++, j++)
+	{
+		dst[j] = (unsigned char)bytes[i] ^ mask[j % 4];
+	}
 
-    packetData.clear();
-    packetData.write(dst, (int)packet_length);
+	packetData.clear();
+	packetData.write(dst, (int)packet_length);
 
-    delete[] dst;
+	delete[] dst;
 
-    return packet_length;
+	return packet_length;
 }
