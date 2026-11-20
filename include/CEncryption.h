@@ -74,7 +74,7 @@ private:
 
 inline void CEncryption::setGen(const uint32_t gen)
 {
-    m_gen = std::clamp(gen, 0U, 6U);
+    m_gen = std::clamp(gen, 0U, 5U);
 }
 
 inline uint32_t CEncryption::getGen() const noexcept
