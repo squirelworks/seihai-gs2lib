@@ -1,4 +1,4 @@
-// Modified by the Seihai project, 2026-10-31, 2026-11-13, 2026-11-15: see CHANGES-SEIHAI.md.
+// Modified by the Seihai project, 2026-10-31, 2026-11-13, 2026-11-15, 2026-11-21: see CHANGES-SEIHAI.md.
 /*
  * include/CEncryption.cpp
  *
@@ -191,7 +191,7 @@ Gen5Steps CEncryption::gen5StepsForClient(const int versionId) noexcept
     // ("4.20r6"-labelled, a 4.10r2-era build) programs, and CLVER_5_12/_MAC
     // (Tiger lab 2026-11-13); and 6.03r7, read 2026-11-19 from the Linux x64
     // build (G3D0511C, platform-identical engine to the Windows G3D0311C):
-    // srawi ...,2 at 0x62050e, cap 4. No gen-5 build has ever been shown to
+    // an arithmetic shift right by 2, cap 4. No gen-5 build has ever been shown to
     // round up -- the old PerStartedGroup default was the legacy GS2Emu
     // behaviour, not a client read -- so round-down is the rule for every
     // gen-5 client. The two builds not machine-read (5.00r7, 5.24r4) are both
