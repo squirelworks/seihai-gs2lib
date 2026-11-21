@@ -23,150 +23,163 @@
 
 static constexpr std::array ITERATOR_START = {0U, 0U, 0x04A80B38U, 0x4A80B38U, 0x4A80B38U, 0U};
 
-CEncryption::CEncryption()
-    : m_key(0), m_limit(-1), m_gen(ENCRYPT_GEN_3)
+static constexpr uint32_t getGenerationInt(const CEncryption* encryption) noexcept
 {
-    m_lastIterator = m_iterator = ITERATOR_START[m_gen];
+	return static_cast<uint32_t>(encryption->getGeneration());
+}
+
+CEncryption::CEncryption()
+{
+	m_lastIterator = m_iterator = ITERATOR_START[getGenerationInt(this)];
 }
 
 void CEncryption::reset(const uint8_t key)
 {
-    m_key = key;
-    m_lastIterator = m_iterator = ITERATOR_START[m_gen];
-    m_limit = -1;
+	m_key = key;
+	m_lastIterator = m_iterator = ITERATOR_START[getGenerationInt(this)];
+	iterationLimit = -1;
 }
 
-void CEncryption::decrypt(CString& pBuf)
+void CEncryption::decrypt(CString& buffer)
 {
-    // If we don't have anything, just return.
-    if (pBuf.isEmpty())
-        return;
+	// If we don't have anything, just return.
+	if (buffer.isEmpty())
+		return;
 
-    // Apply the correct decryption algorithm.
-    switch (m_gen)
-    {
-        // No encryption.
-        case ENCRYPT_GEN_1:
-        case ENCRYPT_GEN_2:
-            return;
+	// Apply the correct decryption algorithm.
+	switch (m_generation)
+	{
+		// No encryption.
+		case EncryptionGeneration::GEN_1:
+		case EncryptionGeneration::GEN_2:
+			return;
 
-        // Single byte insertion/zlib compression.
-        case ENCRYPT_GEN_3:
-        {
-            m_lastIterator = m_iterator;
-            m_iterator *= 0x8088405;
-            m_iterator += m_key;
-            const auto pos = ((m_iterator & 0x0FFFF) % pBuf.length());
-            pBuf.removeI(static_cast<int>(pos), 1);
-        }
-        break;
+		// Single byte insertion/zlib compression.
+		case EncryptionGeneration::GEN_3:
+		{
+			m_lastIterator = m_iterator;
+			m_iterator *= 0x8088405;
+			m_iterator += m_key;
+			const auto pos = ((m_iterator & 0x0FFFF) % buffer.length());
+			buffer.removeI(static_cast<int>(pos), 1);
+		}
+		break;
 
-        // Partial packet encryption/none, zlib, bz2 compression methods.
-        // Gen 4 is only bz2.
-        case ENCRYPT_GEN_4:
-        case ENCRYPT_GEN_5:
-        {
-            const auto iterator = reinterpret_cast<const uint8_t*>(&m_iterator);
+		// Partial packet encryption/none, zlib, bz2 compression methods.
+		// Gen 4 is only bz2.
+		case EncryptionGeneration::GEN_4:
+		case EncryptionGeneration::GEN_5:
+		{
+			const auto iterator = reinterpret_cast<const uint8_t*>(&m_iterator);
 
-            for (int32_t i = 0; i < pBuf.length(); ++i)
-            {
-                if (i % 4 == 0)
-                {
-                    if (m_limit == 0)
-                        return;
-                    m_lastIterator = m_iterator;
-                    m_iterator *= 0x8088405;
-                    m_iterator += m_key;
-                    if (m_limit > 0)
-                        m_limit--;
-                }
+			// Determine how many iterations we will process.
+			auto iterations = allowPartialIteration ? ((3 + buffer.length()) / 4) : buffer.length() / 4;
+			if (iterationLimit >= 0)
+				iterations = std::min(iterations, iterationLimit);
 
-                pBuf[i] = static_cast<char>(pBuf[i] ^ iterator[i % 4]);
-            }
-        }
-        break;
+			// Process the iterations.
+			for (size_t i = 0; i < iterations; ++i)
+			{
+				// Increase the iterator.
+				m_lastIterator = m_iterator;
+				m_iterator *= 0x8088405;
+				m_iterator += m_key;
 
-        // Future encryption method.
-        case ENCRYPT_GEN_6:
-        default:
-            break;
-    }
+				// Apply to the buffer.
+				const auto bufferStart = i * 4;
+				const auto bufferEnd = buffer.length() - bufferStart;
+				for (size_t j = 0; j < 4 && j < bufferEnd; ++j)
+				{
+					buffer[bufferStart + j] = static_cast<char>(buffer[bufferStart + j] ^ iterator[j]);
+				}
+			}
+		}
+		break;
+
+		// Future encryption method.
+		case EncryptionGeneration::GEN_6:
+		default:
+			break;
+	}
 }
 
-CString CEncryption::encrypt(CString pBuf)
+CString CEncryption::encrypt(CString buffer)
 {
-    // If we don't have anything, just return.
-    if (pBuf.isEmpty())
-        return pBuf;
+	// If we don't have anything, just return.
+	if (buffer.isEmpty())
+		return buffer;
 
-    switch (m_gen)
-    {
-        // No encryption.
-        case ENCRYPT_GEN_1:
-        case ENCRYPT_GEN_2:
-            break;
+	switch (m_generation)
+	{
+		// No encryption.
+		case EncryptionGeneration::GEN_1:
+		case EncryptionGeneration::GEN_2:
+			break;
 
-        // Single byte insertion.
-        case ENCRYPT_GEN_3:
-        {
-            m_lastIterator = m_iterator;
-            m_iterator *= 0x8088405;
-            m_iterator += m_key;
-            const auto pos = ((m_iterator & 0x0FFFF) % pBuf.length());
-            return CString() << pBuf.subString(0, static_cast<int>(pos)) << ")" << pBuf.subString(static_cast<int>(pos));
-            break;
-        }
+		// Single byte insertion.
+		case EncryptionGeneration::GEN_3:
+		{
+			m_lastIterator = m_iterator;
+			m_iterator *= 0x8088405;
+			m_iterator += m_key;
+			const auto pos = ((m_iterator & 0x0FFFF) % buffer.length());
+			const auto byte = static_cast<char>((m_iterator >> 16) & 0x7F);
+			return CString() << buffer.subString(0, static_cast<int>(pos)) >> byte << buffer.subString(static_cast<int>(pos));
+		}
 
-        // Partial packet encryption/none, zlib, bz2 compression methods.
-        // Gen 4 is only bz2.
-        case ENCRYPT_GEN_4:
-        case ENCRYPT_GEN_5:
-        {
-            const auto iterator = reinterpret_cast<const uint8_t*>(&m_iterator);
+		// Partial packet encryption/none, zlib, bz2 compression methods.
+		// Gen 4 is only bz2.
+		case EncryptionGeneration::GEN_4:
+		case EncryptionGeneration::GEN_5:
+		{
+			const auto iterator = reinterpret_cast<const uint8_t*>(&m_iterator);
 
-            for (int32_t i = 0; i < pBuf.length(); ++i)
-            {
-                if (i % 4 == 0)
-                {
-                    if (m_limit == 0)
-                        return pBuf;
-                    m_lastIterator = m_iterator;
-                    m_iterator *= 0x8088405;
-                    m_iterator += m_key;
-                    if (m_limit > 0)
-                        m_limit--;
-                }
+			// Determine how many iterations we will process.
+			auto iterations = allowPartialIteration ? ((3 + buffer.length()) / 4) : buffer.length() / 4;
+			if (iterationLimit >= 0)
+				iterations = std::min(iterations, iterationLimit);
 
-                pBuf[i] = static_cast<char>(pBuf[i] ^ iterator[i % 4]);
-            }
-            return pBuf;
-            break;
-        }
+			// Process the iterations.
+			for (size_t i = 0; i < iterations; ++i)
+			{
+				// Increase the iterator.
+				m_lastIterator = m_iterator;
+				m_iterator *= 0x8088405;
+				m_iterator += m_key;
 
-        default:;
-    }
-    return pBuf;
+				// Apply to the buffer.
+				const auto bufferStart = i * 4;
+				const auto bufferEnd = buffer.length() - bufferStart;
+				for (size_t j = 0; j < 4 && j < bufferEnd; ++j)
+				{
+					buffer[bufferStart + j] = static_cast<char>(buffer[bufferStart + j] ^ iterator[j]);
+				}
+			}
+			return buffer;
+		}
+
+		// No encryption.
+		case EncryptionGeneration::GEN_6:
+		default:
+			break;
+	}
+	return buffer;
 }
 
-void CEncryption::limit(const int32_t limit)
+void CEncryption::setIterationLimitFromCompressionType(const EncryptionCompression type) noexcept
 {
-    m_limit = limit;
-}
+	constexpr std::array<std::pair<EncryptionCompression, uint8_t>, 3> limits = {{
+		{EncryptionCompression::UNCOMPRESSED, 0x0C},
+		{EncryptionCompression::ZLIB, 0x04},
+		{EncryptionCompression::BZ2, 0x04}
+	}};
 
-int CEncryption::limitFromType(const uint8_t type)
-{
-    // { type, limit, type2, limit2, ... }
-    static int limits[] = {0x02, 0x0C, 0x04, 0x04, 0x06, 0x04};
-    for (unsigned int i = 0; i < sizeof(limits) / sizeof(int); i += 2)
-    {
-        // If we found a valid type, set the limit.
-        if (limits[i] == type)
-        {
-            m_limit = (int32_t)limits[i + 1];
-            return 0;
-        }
-    }
-
-    // Error.
-    return 1;
+	for (size_t i = 0; i < limits.size(); ++i)
+	{
+		if (const auto [compression, limit] = limits[i]; compression == type)
+		{
+			iterationLimit = limit;
+			return;
+		}
+	}
 }

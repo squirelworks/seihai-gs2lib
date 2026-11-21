@@ -48,7 +48,7 @@ public:
     void clearBuffers();
 
     void setSocket(CSocket* pSock);
-    void setCodec(uint32_t gen, uint8_t key);
+    void setCodec(EncryptionGeneration generation, uint8_t key);
 
     [[nodiscard]] bool canSend() const;
     void sendCompress(bool forceSendFiles = false);
@@ -72,9 +72,9 @@ inline void CFileQueue::setSocket(CSocket* pSock)
     m_socket = pSock;
 }
 
-inline void CFileQueue::setCodec(const uint32_t gen, const uint8_t key)
+inline void CFileQueue::setCodec(const EncryptionGeneration generation, const uint8_t key)
 {
-    m_outputCodec.setGen(gen);
+    m_outputCodec.setGeneration(generation);
     m_outputCodec.reset(key);
 }
 
