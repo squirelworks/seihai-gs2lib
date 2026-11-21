@@ -287,6 +287,11 @@ void CFileQueue::sendCompress(const bool forceSendFiles)
 				return;
 			}
 
+			// Uncompressed packets always allow partial iteration.
+			const bool oldPartial = m_outputCodec.allowPartialIteration;
+			if (compressionType == EncryptionCompression::UNCOMPRESSED)
+				m_outputCodec.allowPartialIteration = true;
+
 			// Encrypt the packet and add it to the out buffer.
 			m_outputCodec.setIterationLimitFromCompressionType(compressionType);
 			m_scratchBuffer = m_outputCodec.encrypt(m_scratchBuffer);
@@ -298,6 +303,8 @@ void CFileQueue::sendCompress(const bool forceSendFiles)
 			// Send.
 			unsigned int dsize = m_sendBuffer.length();
 			m_sendBuffer.removeI(0, m_socket->sendData(m_sendBuffer.text(), &dsize));
+
+			m_outputCodec.allowPartialIteration = oldPartial;
 			break;
 		}
 	}
