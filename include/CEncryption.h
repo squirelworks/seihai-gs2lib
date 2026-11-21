@@ -101,6 +101,9 @@ public:
 	int32_t iterationLimit = -1;
 
 	/// @brief If true, a partial tail (less than 4 bytes) is processed. If false, it is skipped.
+	/// @details v4-v5 clients will not process a partial tail on compressed packets, skipping any remaining bytes.
+	/// This is not a problem since compression only turns on when the packet is a certain length, which is greater
+	/// than the encryption limit (default of 16 bytes of data).  As such, this could only be a problem if you are modifying the server.
 	bool allowPartialIteration = true;
 
 private:
