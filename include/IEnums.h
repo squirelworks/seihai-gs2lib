@@ -1,4 +1,4 @@
-// Modified by the Seihai project, 2026-11-11: see CHANGES-SEIHAI.md.
+// Modified by the Seihai project, 2026-11-11, 2026-11-25: see CHANGES-SEIHAI.md.
 /*
  * include/IEnums.h
  *
@@ -165,11 +165,12 @@ typedef enum PlayerToServer
 	PLI_RC_LARGEFILESTART		= 155,
 	PLI_RC_LARGEFILEEND			= 156,
 
-	PLI_UPDATEGANI				= 157,	// Something to do with ganis.		-- Likely: PLI_UPDATEGANI [similar to UPDATECLASS], replies with 253? multiple replies in one
+	PLI_UPDATEGANI				= 157,	// {157}{INT5 crc32}{name} - Gani update check.
 	PLI_UPDATESCRIPT			= 158,	// {158}{script} Requests a script from the server.
+	PLI_UPDATEWEAPON			= PLI_UPDATESCRIPT,	// upstream name (2026-11-20): weapon update check, kept as alias
 	PLI_UPDATEPACKAGEREQUESTFILE= 159,	// {159]{(char)order?]{packagefilename}{modtime}
 	PLI_RC_FOLDERDELETE			= 160,
-	PLI_UPDATECLASS				= 161,	// {161}{INT5 modtime}{name} Class request.
+	PLI_UPDATECLASS				= 161,	// {161}{INT5 crc32}{name} - Class update request.
 	// confirmed (layout); inferred (that it is a ping).
 	// Game clients (4.20r6, 4.20r8, 6.x): answer to PLO_PING sub 0, {162}{'!'}{s value}
 	// (value capped at 0x6FFF). RCs (2010 build, RC3): empty, every 60 s as a keepalive.
@@ -326,12 +327,14 @@ typedef enum ServerToPlayer
 	PLO_CLASSBYTECODE			= 133,
 	PLO_UNKNOWN133				= PLO_CLASSBYTECODE,	// old name, kept as alias
 	PLO_GANISCRIPT				= 134,	// Might be used for package downloads. Looks to send gani scripts to client
+	PLO_GANIBYTECODE			= PLO_GANISCRIPT,	// upstream name (2026-11-20): {134}{GSTRING ganiName}{bytecode} - [RAW] v4+
 	// confirmed. Header is type,name,cacheflag,i5,i5 (the two i5 values are the
 	// 8-byte DES key for the GRESCR01 cache, little-endian 32-bit words), then the body.
 	// With cache flag 1 the client writes the body it received. Handled with 197.
 	// upstream gs2lib: {140}{GSHORT info_length}{info}{bytecode}
 	PLO_WEAPONBYTECODE2			= 140,
 	PLO_NPCWEAPONSCRIPT			= PLO_WEAPONBYTECODE2,	// old name, kept as alias
+	PLO_HEADEREDBYTECODE		= PLO_WEAPONBYTECODE2,	// upstream name (2026-11-20), kept as alias
 	PLO_NPCDEL2					= 150,	// {150}{GSTRING level}{GINT3 npcid}
 	PLO_HIDENPCS				= 151,	// {151} - This might delete all npcs with an id under 1000.
 	PLO_SAY2					= 153,	// {153}{text} - Also used for signs.
@@ -392,7 +395,7 @@ typedef enum ServerToPlayer
 	// script lists (4.20r8); 5.x and 6.x clear more of the loaded script state.
 	PLO_RESETCLIENT				= 194,
 	PLO_CLEARWEAPONS			= PLO_RESETCLIENT,	// old name, kept as alias
-	PLO_LOADGANI				= 195,	// {195}{GSTRING gani}{STRINGLIST ?} - The stringlist is SETBACKTO, but may contain other things.
+	PLO_LOADGANI				= 195,	// {195}{GSTRING gani}{STRINGLIST overrides} - Directs the client to load the gani, appending the overrides to the gani file.
 	// confirmed. "Use your cache": same DES key as 140 and a CRC32 of the plain body.
 	// {197}{STRINGLIST type,name,saveToDisk,desKey,crc32}. The client decrypts its
 	// copy, checks the CRC32, and loads it on a match; otherwise it asks with PLI_UPDATESCRIPT (158).

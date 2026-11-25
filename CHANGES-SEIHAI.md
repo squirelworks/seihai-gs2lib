@@ -2,10 +2,16 @@
 
 Mirror of [gs2lib](https://bitbucket.org/xtjoeytx/gs2lib) (GPL-3.0, see `LICENSE.md`).
 `master` is a copy of upstream and can lag behind it. Our changes are on branch
-`seihai`, which includes upstream through `6dd10ff` (the commit GServer-v2 beta4
-pins since 2026-11-17). Used by
+`seihai`, which includes upstream through `9bc1a0f` (the commit GServer-v2 beta4
+pins since 2026-11-20). Used by
 [seihai-gserver-v2](https://github.com/squirelworks/seihai-gserver-v2).
 
+
+## 2026-11-25
+
+| Change | Files | Checked with |
+|---|---|---|
+| Merged upstream gs2lib up to `9bc1a0f` (2026-11-20, 7 commits after `6dd10ff`), the commit GServer-v2 `beta4` `f98c1d5` pins. Upstream refactored `CEncryption`: `EncryptionGeneration` and `EncryptionCompression` enum classes, `setGeneration` / `getGeneration`, `setIterationLimitFromCompressionType`, a public `iterationLimit`, and an `allowPartialIteration` flag that is upstream's form of our gen-5 round-down rule (`57db24a`, `9bc1a0f`). `CEncryption` now takes upstream's form. Kept on top: the old names (`ENCRYPT_GEN_*`, `COMPRESS_*`, `setGen`, `getGen`, `limit`, `limitFromType`, `Gen5Steps`, `setGen5Steps`, `gen5StepsForClient`) as a thin layer over the new interface, so seihai-gserver-v2 and the tests build unchanged; `setGeneration` clamps to `GEN_6` (upstream maps `COUNT` to `GEN_5` and passes larger values through, which would read past the iterator table); and an uncompressed body always steps over its partial tail inside the codec, and gen 4 keeps round-up, so callers do not have to toggle the flag around each frame as upstream's do. Upstream's GEN_3 encrypt now inserts a byte from the iterator instead of `)`; taken. `CFileQueue` moves to the new enums; upstream's GCHAR-id fix there (`04fc80b`) was ours already (2026-11-18), and its version reads the id before checking for an empty packet, so ours is kept. `getVersionString` keeps ours: upstream's `40b0e2f` fix returns the version token from `clientVersions` instead of the label. `CLVER_COUNT`, `NCVER_COUNT` and `RCVER_COUNT` are taken. `IEnums.h` keeps our names and adds upstream's new ones as aliases: `PLI_UPDATEWEAPON` (158), `PLO_GANIBYTECODE` (134), `PLO_HEADEREDBYTECODE` (140); upstream's comments for 161 and 195 are taken. `CFileQueue::setAllowPartialIteration` is new, for the output codec. | `include/CEncryption.h`, `src/CEncryption.cpp`, `include/CFileQueue.h`, `src/CFileQueue.cpp`, `include/IEnums.h`, `include/IUtil.h`, `src/IUtil.cpp`, `tests/Gen5StepsTest.cpp`, `CHANGES-SEIHAI.md` | Linux GCC 13: all 7 `GS2LIB_TESTS` pass. `Gen5StepsTest`'s byte-exact expectations pass through the new codec, and a new block checks that upstream's interface gives the same bytes and that `COUNT` clamps to `GEN_6`. |
 
 ## 2026-11-21
 

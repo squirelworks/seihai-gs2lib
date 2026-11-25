@@ -1,4 +1,4 @@
-﻿// Modified by the Seihai project, 2026-10-31, 2026-11-12: see CHANGES-SEIHAI.md.
+﻿// Modified by the Seihai project, 2026-10-31, 2026-11-12, 2026-11-25: see CHANGES-SEIHAI.md.
 /*
  * include/CFileQueue.h
  *
@@ -49,8 +49,10 @@ public:
     void clearBuffers();
 
     void setSocket(CSocket* pSock);
-    void setCodec(uint32_t gen, uint8_t key);
+    void setCodec(EncryptionGeneration generation, uint8_t key);
+    void setCodec(uint32_t gen, uint8_t key) { setCodec(static_cast<EncryptionGeneration>(std::min(gen, static_cast<uint32_t>(EncryptionGeneration::GEN_6))), key); } // Seihai: old interface
     void setGen5Steps(Gen5Steps steps) noexcept { m_outputCodec.setGen5Steps(steps); } // Seihai
+    void setAllowPartialIteration(bool allow) noexcept { m_outputCodec.allowPartialIteration = allow; } // Seihai
 
     [[nodiscard]] bool canSend() const;
     void sendCompress(bool forceSendFiles = false);
@@ -74,9 +76,9 @@ inline void CFileQueue::setSocket(CSocket* pSock)
     m_socket = pSock;
 }
 
-inline void CFileQueue::setCodec(const uint32_t gen, const uint8_t key)
+inline void CFileQueue::setCodec(const EncryptionGeneration generation, const uint8_t key)
 {
-    m_outputCodec.setGen(gen);
+    m_outputCodec.setGeneration(generation);
     m_outputCodec.reset(key);
 }
 

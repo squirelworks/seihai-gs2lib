@@ -1,4 +1,4 @@
-// Modified by the Seihai project, 2026-11-01, 2026-11-12, 2026-11-14, 2026-11-18: see CHANGES-SEIHAI.md.
+// Modified by the Seihai project, 2026-11-01, 2026-11-12, 2026-11-14, 2026-11-18, 2026-11-25: see CHANGES-SEIHAI.md.
 /*
  * include/CFileQueue.cpp
  *
@@ -134,14 +134,14 @@ void CFileQueue::sendCompress(const bool forceSendFiles)
     auto addPacket = [this](const std::pair<bool, CString>& packet)
     {
         // If this is a raw data packet, and we are not gen 6, prepend PLO_RAWDATA to the output.
-        if (packet.first == true && m_outputCodec.getGen() <= ENCRYPT_GEN_5)
+        if (packet.first == true && m_outputCodec.getGeneration() <= EncryptionGeneration::GEN_5)
             m_scratchBuffer >> (char)PLO_RAWDATA >> (int)(packet.second.length() + 1) << '\n';
 
         // Output the packet.
         m_scratchBuffer << packet.second;
 
         // Add the newline.
-        if (m_outputCodec.getGen() <= ENCRYPT_GEN_5)
+        if (m_outputCodec.getGeneration() <= EncryptionGeneration::GEN_5)
             m_scratchBuffer << '\n';
     };
     auto normalQueueContainsFile = [this]() -> bool
@@ -231,12 +231,12 @@ void CFileQueue::sendCompress(const bool forceSendFiles)
     m_sendCallsWithoutData = 0;
 
     // compress buffer
-    switch (m_outputCodec.getGen())
+    switch (m_outputCodec.getGeneration())
     {
         // Just send whatever is in the buffer.
         default:
-        case ENCRYPT_GEN_1:
-        case ENCRYPT_GEN_6:
+        case EncryptionGeneration::GEN_1:
+        case EncryptionGeneration::GEN_6:
         {
             m_sendBuffer << m_scratchBuffer;
 
@@ -248,8 +248,8 @@ void CFileQueue::sendCompress(const bool forceSendFiles)
             break;
         }
 
-        case ENCRYPT_GEN_2:
-        case ENCRYPT_GEN_3:
+        case EncryptionGeneration::GEN_2:
+        case EncryptionGeneration::GEN_3:
         {
             // Compress the packet.
             m_scratchBuffer.zcompressI();
@@ -272,7 +272,7 @@ void CFileQueue::sendCompress(const bool forceSendFiles)
             break;
         }
 
-        case ENCRYPT_GEN_4:
+        case EncryptionGeneration::GEN_4:
         {
             m_scratchBuffer.bzcompressI();
 
@@ -284,7 +284,7 @@ void CFileQueue::sendCompress(const bool forceSendFiles)
             }
 
             // Encrypt the packet and add it to the out buffer.
-            m_outputCodec.limitFromType(COMPRESS_BZ2);
+            m_outputCodec.setIterationLimitFromCompressionType(EncryptionCompression::BZ2);
             m_scratchBuffer = m_outputCodec.encrypt(m_scratchBuffer);
             m_sendBuffer << (short)m_scratchBuffer.length() << m_scratchBuffer;
 
@@ -296,20 +296,20 @@ void CFileQueue::sendCompress(const bool forceSendFiles)
             break;
         }
 
-        case ENCRYPT_GEN_5:
+        case EncryptionGeneration::GEN_5:
         {
             // unsigned int oldSize = pSend.length();
 
             // Choose which compression to use and apply it.
-            int compressionType = COMPRESS_UNCOMPRESSED;
+            auto compressionType = EncryptionCompression::UNCOMPRESSED;
             if (m_scratchBuffer.length() > 0x2000) // 8KB
             {
-                compressionType = COMPRESS_BZ2;
+                compressionType = EncryptionCompression::BZ2;
                 m_scratchBuffer.bzcompressI();
             }
             else if (m_scratchBuffer.length() > 55)
             {
-                compressionType = COMPRESS_ZLIB;
+                compressionType = EncryptionCompression::ZLIB;
                 m_scratchBuffer.zcompressI();
             }
 
@@ -325,7 +325,8 @@ void CFileQueue::sendCompress(const bool forceSendFiles)
             }
 
             // Encrypt the packet and add it to the out buffer.
-            m_outputCodec.limitFromType(compressionType);
+            // Uncompressed bodies always step over a partial tail; the codec handles that itself.
+            m_outputCodec.setIterationLimitFromCompressionType(compressionType);
             m_scratchBuffer = m_outputCodec.encrypt(m_scratchBuffer);
             m_sendBuffer << (short)(m_scratchBuffer.length() + 1) << (char)compressionType << m_scratchBuffer;
 
