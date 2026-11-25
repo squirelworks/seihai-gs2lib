@@ -250,6 +250,8 @@ enum
 	CLVER_IPHONE_CLASSICPLUS_1_13, // Seihai: GraalOnline Classic+ 1.13 for iPhone, token G3D0208A
 	CLVER_IPHONE_BELOTE_1_5,
 	CLVER_WORLDS,
+
+	CLVER_COUNT
 };
 
 enum
@@ -257,6 +259,8 @@ enum
 	NCVER_UNKNOWN,
 	NCVER_1_1,
 	NCVER_2_1,
+
+	NCVER_COUNT
 };
 
 enum
@@ -265,6 +269,8 @@ enum
 	RCVER_1_010,
 	RCVER_1_1,
 	RCVER_2,
+
+	RCVER_COUNT
 };
 
 int getVersionID(const CString& version);

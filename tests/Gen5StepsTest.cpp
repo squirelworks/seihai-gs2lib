@@ -1,4 +1,4 @@
-// Seihai project, 2026-10-31: see CHANGES-SEIHAI.md.
+// Seihai project, 2026-10-31, 2026-11-25: see CHANGES-SEIHAI.md.
 //
 // This file is part of the Seihai fork of gs2lib and is released under the
 // GNU General Public License version 3 or later (see LICENSE.md).
@@ -167,6 +167,28 @@ int main()
         CHECK(getVersionID("G3D20126") == CLVER_4_208);
         CHECK(getVersionID("G3D27076") == CLVER_4_102_MAC);
         CHECK(getVersionID("G3D15010") == CLVER_5_24);
+    }
+
+    // Upstream's interface (2026-11-20) drives the same rule: allowPartialIteration = false
+    // is PerWholeGroup, and an uncompressed body still steps over its partial tail without
+    // the caller turning the flag back on.
+    {
+        CEncryption c;
+        c.setGeneration(EncryptionGeneration::GEN_5);
+        c.allowPartialIteration = false;
+        c.reset(0x4B);
+        CHECK(c.getGen5Steps() == Gen5Steps::PerWholeGroup);
+        c.setIterationLimitFromCompressionType(EncryptionCompression::ZLIB);
+        CHECK(hex(c.encrypt(zeros(7))) == "6318d1d6000000");
+
+        auto up = codec(0x4B, Gen5Steps::PerWholeGroup);
+        (void)encode(up, 7, COMPRESS_ZLIB);
+        c.setIterationLimitFromCompressionType(EncryptionCompression::UNCOMPRESSED);
+        CHECK(c.encrypt(zeros(7)) == encode(up, 7, COMPRESS_UNCOMPRESSED));
+
+        // Out-of-range generations clamp to GEN_6 (upstream maps COUNT to GEN_5).
+        c.setGeneration(EncryptionGeneration::COUNT);
+        CHECK(c.getGeneration() == EncryptionGeneration::GEN_6);
     }
 
     if (failures != 0)

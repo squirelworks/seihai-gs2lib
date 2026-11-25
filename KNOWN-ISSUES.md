@@ -11,7 +11,7 @@ own list is in its
 [KNOWN-ISSUES.md](https://github.com/squirelworks/seihai-gserver-v2/blob/seihai/KNOWN-ISSUES.md).
 
 Last checked against branch `seihai` at the #38 merge (2026-11-19), which
-includes upstream gs2lib through `6dd10ff`.
+includes upstream gs2lib through `9bc1a0f`.
 
 **Short version:** there is no open, confirmed bug in this library today. What
 is open is coverage: the fuzzers have run for minutes, not hours, and parts of
@@ -159,7 +159,7 @@ adding a comment with the evidence beside upstream's name is welcome.
 
 If you run a server on upstream gs2lib, these are worth knowing about. Each has
 a row in [CHANGES-SEIHAI.md](CHANGES-SEIHAI.md) with the details and a test.
-"May still have" means: present at upstream `6dd10ff`, our last merge. Check
+"May still have" means: present at upstream `9bc1a0f`, our last merge. Check
 upstream's current head before relying on it.
 
 | Bug | Fixed here | What happens without the fix |
